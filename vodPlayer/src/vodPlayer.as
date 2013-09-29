@@ -1,18 +1,14 @@
 package
 {
-	import flash.display.Sprite;
-	import flash.text.TextField;
+	import flash.events.Event;
 	
-	public class vodPlayer extends Sprite
+	import zuffy.core.*;
+	
+	public class vodPlayer extends EventPlayer
 	{
 		public function vodPlayer()
 		{
-			
+			super();
 		}
-		
-		private function init():void{
-			
-		}
-		
 	}
 }
