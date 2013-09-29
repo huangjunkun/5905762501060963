@@ -1,6 +1,8 @@
 ﻿package zuffy.display.subtitle 
 {
 	
+	import com.global.GlobalVars;
+	
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.events.HTTPStatusEvent;
@@ -21,13 +23,13 @@
 	import flash.text.TextField;
 	import flash.text.TextFormat;
 	import flash.utils.ByteArray;
-	import flash.utils.getTimer;
 	import flash.utils.Timer;
+	import flash.utils.getTimer;
 	
-	import com.global.GlobalVars;
-	import zuffy.utils.JTracer;
-	import zuffy.utils.Tools;	
+	import zuffy.core.PlayerCtrl;
 	import zuffy.events.CaptionEvent;
+	import zuffy.utils.JTracer;
+	import zuffy.utils.Tools;
 	
 	/**
 	 * ...字幕框
@@ -65,7 +67,7 @@
 		private var _timeInterval:Number;
 		private var _isGrade:Boolean;
 		
-		public function Subtitle(mainMc:Sprite, w:Number = 352, h:Number = 293) 
+		public function Subtitle(mainMc:PlayerCtrl, w:Number = 352, h:Number = 293) 
 		{
 			super();
 			this.visible = false;

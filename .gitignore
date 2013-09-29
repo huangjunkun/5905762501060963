@@ -5,6 +5,7 @@
 .actionScriptProperties
 .flexLibProperties
 html-template/
+bin-debug/
 
 #################
 ## Eclipse

@@ -9,13 +9,18 @@ package zuffy.core
 	import flash.events.MouseEvent;
 	import flash.system.Security;
 	
-	import zuffy.ctr.contextMenu.*;
+	import zuffy.ctr.contextMenu.CreateContextMenu;
+	import zuffy.display.statuMenu.VideoMask;
 	import zuffy.display.subtitle.Subtitle;
 	
 	public class PlayerCtrl extends Sprite
 	{
 		protected var _params:Object;
 		protected var _movieType:String;
+		
+		
+		private var _subTitle:Subtitle;
+		private var _videoMask:VideoMask;
 		
 		public function PlayerCtrl()
 		{
@@ -58,7 +63,7 @@ package zuffy.core
 			GlobalVars.instance.isZXThunder = int(_params["isZXThunder"]) == 1;
 			GlobalVars.instance.isStat = _params['defStatLevel'] == 2 ? true : false;	//0-不上报，1-只上报重要的，2-全部上报
 
-			var _subTitle:Subtitle = new Subtitle(this, _w, _h);
+			_subTitle = new Subtitle(this, _w, _h);
 			_subTitle.handleStageResize(stage.stageWidth, stage.stageHeight);
 			
 			var _screenEvent:Sprite = new Sprite();
@@ -68,17 +73,17 @@ package zuffy.core
 			_screenEvent.graphics.endFill();
 			_screenEvent.doubleClickEnabled = true;
 			_screenEvent.mouseEnabled = true;
+			
 			this.addChild(_screenEvent);
-			//_screenEvent.addEventListener(MouseEvent.DOUBLE_CLICK, onDoubleClickHandle);
-			//_screenEvent.addEventListener(MouseEvent.CLICK, onClickHandle);
+//			_screenEvent.addEventListener(MouseEvent.DOUBLE_CLICK, onDoubleClickHandle);
+//			_screenEvent.addEventListener(MouseEvent.CLICK, onClickHandle);
 			
-			var _videoMask = new VideoMask(this, _movieType);
-			//_videoMask.addEventListener("StartPlayClick", onStartPlayClick);
-			//_videoMask.addEventListener("Refresh", onRefresh);
-			this.addChild(_videoMask);
-			_videoMask.setPosition();
+			_videoMask = new VideoMask(this, _movieType);
+//			_videoMask.addEventListener("StartPlayClick", onStartPlayClick);
+//			_videoMask.addEventListener("Refresh", onRefresh);
 			
-			_ctrBar = new CtrBar(_w,_h,_has_fullscreen, this);
+			/*
+			_ctrBar = new CtrBar(this, _w, _h, _has_fullscreen);
 			this.addChild(_ctrBar);
 			_ctrBar.showPlayOrPauseButton='PLAY';
 			_ctrBar.flvPlayer=_player;
@@ -140,7 +145,7 @@ package zuffy.core
 			_shareFace = new ShareFace();
 			addChild(_shareFace);
 			_shareFace.setPosition();
-			
+			*/
 		}
 		protected function on_stage_RESIZE(e:Event):void{
 			
