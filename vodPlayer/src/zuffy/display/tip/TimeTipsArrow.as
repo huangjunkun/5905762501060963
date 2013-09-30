@@ -1,4 +1,4 @@
-package ctr.tip 
+﻿package zuffy.display.tip 
 {
 	import flash.display.MovieClip;
 	import flash.events.MouseEvent;

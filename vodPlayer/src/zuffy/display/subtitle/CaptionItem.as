@@ -1,4 +1,4 @@
-package ctr.subtitle 
+﻿package zuffy.display.subtitle 
 {
 	import flash.display.MovieClip;
 	import flash.text.TextFormat;

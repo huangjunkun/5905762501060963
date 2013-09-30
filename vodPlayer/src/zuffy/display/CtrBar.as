@@ -1,4 +1,4 @@
-﻿package com
+﻿package zuffy.display
 {
 	import com.common.Cookies;
 	import com.greensock.TweenLite;
@@ -24,23 +24,24 @@
 	import flash.utils.Timer;
 	import com.common.Tools;
 	import com.global.GlobalVars;
-	import ctr.format.CurrentFormatBtn;
-	import ctr.tip.TimeTipsArrow;
-	import eve.EventSet;
+	import zuffy.display.format.CurrentFormatBtn;
+	import zuffy.display.tip.TimeTipsArrow;
+	import zuffy.events.EventSet;
 	import flash.utils.setTimeout;
 	import flash.utils.clearTimeout;
 	
 	import com.common.JTracer;
-	import ctr.fullScreen.FullScreenButton;
-	import ctr.tip.BtnTip;
-	import ctr.tip.McTimeTip;
-	import ctr.tip.Volume100Tips;
-	import ctr.tip.VolumeTips;
-	import ctr.volume.McVolume;
-	import ctr.format.FormatBtn;
-	import eve.PlayEvent;
-	import eve.VolumeEvent;
+	import zuffy.display.fullScreen.FullScreenButton;
+	import zuffy.display.tip.BtnTip;
+	import zuffy.display.tip.McTimeTip;
+	import zuffy.display.tip.Volume100Tips;
+	import zuffy.display.tip.VolumeTips;
+	import zuffy.display.volume.McVolume;
+	import zuffy.display.format.FormatBtn;
 	import com.common.KKCountReport;
+	import zuffy.events.*;
+	import zuffy.core.PlayerCtrl;
+	import com.Player;
 	
 	public class CtrBar extends Sprite{
 		public var _barBg:DefaultBar;          //控制条的背景

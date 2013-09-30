@@ -1,4 +1,4 @@
-package ctr.subtitle 
+﻿package zuffy.display.subtitle 
 {
 	import com.common.Tools;
 	import flash.events.EventDispatcher;
@@ -7,7 +7,7 @@ package ctr.subtitle
 	import flash.net.URLRequest;
 	import flash.utils.Timer;
 	import com.global.GlobalVars;
-	import eve.CaptionEvent;
+	import zuffy.events.CaptionEvent;
 	
 	/**
 	 * ...

@@ -1,8 +1,6 @@
-﻿package zuffy.display.subtitle 
+﻿package zuffy.display.subtitle
 {
-	
-	import com.global.GlobalVars;
-	
+	import com.common.Tools;
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.events.HTTPStatusEvent;
@@ -23,13 +21,13 @@
 	import flash.text.TextField;
 	import flash.text.TextFormat;
 	import flash.utils.ByteArray;
-	import flash.utils.Timer;
 	import flash.utils.getTimer;
-	
-	import zuffy.core.PlayerCtrl;
+	import flash.utils.Timer;
+	import com.common.JTracer;
+	import com.global.GlobalVars;
+	import com.Player;
 	import zuffy.events.CaptionEvent;
-	import zuffy.utils.JTracer;
-	import zuffy.utils.Tools;
+	import zuffy.core.PlayerCtrl;
 	
 	/**
 	 * ...字幕框
@@ -37,6 +35,7 @@
 	 */
 	public class Subtitle extends Sprite
 	{
+		private var _player:Player;
 		private var _currentWidth:Number;
 		private var _currentHeight:Number;
 		private var _txtSubTitle:TextField;
@@ -47,7 +46,7 @@
         private var _lastIndex:uint = 0;		
 		private var _getTitleTimer:Timer;
 		private var _captionStamp:Number = 0;
-		private var _mainMc:Sprite;
+		private var _mainMc:PlayerCtrl;
 		private var _fontSize:Number = 25;
 		private var _scid:String;
 		private var _surl:String;
@@ -67,12 +66,13 @@
 		private var _timeInterval:Number;
 		private var _isGrade:Boolean;
 		
-		public function Subtitle(mainMc:PlayerCtrl, w:Number = 352, h:Number = 293) 
+		public function Subtitle(mainMc:PlayerCtrl, player:Player, w:Number = 352, h:Number = 293) 
 		{
 			super();
 			this.visible = false;
 			_mainMc = mainMc;
 			_mainMc.addChild(this);
+			_player = player;
 			_currentWidth = w;
 			_currentHeight = h;
 			initializeViews();
@@ -325,7 +325,6 @@
 		
 		private function handlGetTitleTimer(e:TimerEvent):void
 		{
-			/*重构
 			if (_mainMc.isStartPlayLoading)
 			{
 				_txtSubTitle.text = "";
@@ -369,7 +368,6 @@
 				
 				sendToURL(req);
 			}
-			*/
 		}
 		
 		private function toARGB(color:uint):String

@@ -1,7 +1,7 @@
-package display.subtitle
+﻿package zuffy.display.subtitle
 {
-	import ctr.setting.SetDrawBackground;
-	import ctr.setting.SetDrawOption;
+	import zuffy.display.setting.SetDrawBackground;
+	import zuffy.display.setting.SetDrawOption;
 	import flash.display.DisplayObject;
 	import flash.display.Shape;
 	import flash.display.Sprite;
@@ -11,8 +11,8 @@ package display.subtitle
 	import flash.text.TextFormat;
 	import flash.events.MouseEvent;
 	import flash.events.Event;
-	import ctr.filter.Filter;
-	import eve.EventSet;
+	import zuffy.display.filter.Filter;
+	import zuffy.events.EventSet;
 	
 	/**
 	 * ...

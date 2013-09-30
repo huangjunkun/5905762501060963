@@ -22,9 +22,9 @@
 	import flash.utils.Timer;
 	import flash.utils.getTimer;
 	
-	import eve.EventSet;
-	import eve.PlayEvent;
-	import eve.TryPlayEvent;
+	import zuffy.events.EventSet;
+	import zuffy.events.PlayEvent;
+	import zuffy.events.TryPlayEvent;
 	
 	import zuffy.core.PlayerCtrl;
 	import zuffy.utils.Tools;
@@ -37,10 +37,10 @@
 	
 	public class VideoMask extends Sprite
 	{
-		private var _qualityLoading:Sprite;
-		private var _processLoading:Sprite;
-		private var _bufferLoading:Sprite;
-		private var _startPlayBtn:Sprite;
+		private var _qualityLoading:QualityLoading;
+		private var _processLoading:ProcessLoading;
+		private var _bufferLoading:BufferLoading;
+		private var _startPlayBtn:StartPlayButton;
 		private var _isBuffer:Boolean = false;
 		private var _isFirstLoading:Boolean = true;
 		private var _isQualityLoading:Boolean = false;
@@ -49,7 +49,7 @@
 		private var _delayTimer:Timer = new Timer(800, 0);
 		private var _cacheStreamPercent:Number = 0;
 		private var _isFirstInit:Boolean = true;
-//		private var _logoEnd:LogoEnd;
+		private var _logoEnd:LogoEnd;
 		private var _invalidText:TextField;
 		private var _mainMc:PlayerCtrl;
 		private var _style:StyleSheet;
@@ -196,8 +196,8 @@
 		{
 			hideAll();
 			if(_startPlayBtn == null){
-//				_startPlayBtn = new StartPlayButton();
-//				_startPlayBtn.gotoAndStop(1);
+				_startPlayBtn = new StartPlayButton();
+				_startPlayBtn.gotoAndStop(1);
 				_startPlayBtn.buttonMode = true;
 				_startPlayBtn.mouseChildren = false;
 				_startPlayBtn.addEventListener(MouseEvent.CLICK, onStartPlayClick);
@@ -223,7 +223,7 @@
 					refresh(2);
 					break;
 				case "buyVIP11":
-//mzh					dispatchEvent(new TryPlayEvent(TryPlayEvent.BuyVIP, {refer:"XV_34"}));
+					dispatchEvent(new TryPlayEvent(TryPlayEvent.BuyVIP, {refer:"XV_34"}));
 					break;
 				case "buyVIP13FluxOut":
 					buyVIP13FluxOut();
@@ -271,12 +271,12 @@
 		private function buyVIP13FluxOut():void
 		{
 			var paypos:String = GlobalVars.instance.paypos_tryfinish;
-//			dispatchEvent(new TryPlayEvent(TryPlayEvent.BuyVIP, {refer:"XV_13", paypos:paypos, hasBytes:false}));
+			dispatchEvent(new TryPlayEvent(TryPlayEvent.BuyVIP, {refer:"XV_13", paypos:paypos, hasBytes:false}));
 		}
 		
 		private function feedback():void
 		{
-//			dispatchEvent(new EventSet(EventSet.SHOW_FACE, "feedbackFromTips"));
+			dispatchEvent(new EventSet(EventSet.SHOW_FACE, "feedbackFromTips"));
 		}
 		
 		private function onStartPlayClick(evt:MouseEvent):void
@@ -286,12 +286,12 @@
 		
 		private function onStartPlayOver(evt:MouseEvent):void
 		{
-//			_startPlayBtn.gotoAndStop(2);
+			_startPlayBtn.gotoAndStop(2);
 		}
 		
 		private function onStartPlayOut(evt:MouseEvent):void
 		{
-//			_startPlayBtn.gotoAndStop(1);
+			_startPlayBtn.gotoAndStop(1);
 		}
 		
 		public function get isStartPlayLoading():Boolean
@@ -315,10 +315,10 @@
 			if (_processLoading){
 				_processLoading.visible = true;
 			} else {
-//				_processLoading = new ProcessLoading();
+				_processLoading = new ProcessLoading();
 			}
-//			_processLoading.changeTips();
-//			_processLoading.progress = 0;
+			_processLoading.changeTips();
+			_processLoading.progress = 0;
 			this.addChild(_processLoading);
 			this.addEventListener(Event.ENTER_FRAME, fnEnterFrameBytesLoaded);
 			setPosition();
@@ -337,66 +337,66 @@
 		
 		private function showStopLogo():void
 		{
-//			hideAll();
+			hideAll();
 //			if (_isQualityLoading == true || !_mainMc.isShowStopFace) { return; }
-//			drawMask();
-//			if (_logoEnd){
-//				_logoEnd.visible = true;
-//			} else {
-//				_logoEnd = new LogoEnd();
-//				_logoEnd.replay_btn.buttonMode = true;
-//				_logoEnd.replay_btn.mouseChildren = false;
-//				_logoEnd.replay_btn.addEventListener(MouseEvent.CLICK, onReplayClick);
-//				_logoEnd.replay_btn.addEventListener(MouseEvent.MOUSE_OVER, onBtnOver);
-//				_logoEnd.replay_btn.addEventListener(MouseEvent.MOUSE_OUT, onBtnOut);
-//				
-//				if (GlobalVars.instance.platform == "client" || GlobalVars.instance.isZXThunder)
-//				{
-//					_logoEnd.removeChild(_logoEnd.share_btn);
-//				}
-//				else
-//				{
-//					if (GlobalVars.instance.enableShare)
-//					{
-//						_logoEnd.share_btn.gotoAndStop(1);
-//						_logoEnd.share_btn.buttonMode = true;
-//						_logoEnd.share_btn.mouseChildren = false;
-//						_logoEnd.share_btn.addEventListener(MouseEvent.CLICK, onShareClick);
-//						_logoEnd.share_btn.addEventListener(MouseEvent.MOUSE_OVER, onBtnOver);
-//						_logoEnd.share_btn.addEventListener(MouseEvent.MOUSE_OUT, onBtnOut);
-//					}
-//					else
-//					{
-//						_logoEnd.share_btn.gotoAndStop(2);
-//					}
-//				}
-//			}
-//			this.addChild(_logoEnd);
-//			
+			drawMask();
+			if (_logoEnd){
+				_logoEnd.visible = true;
+			} else {
+				_logoEnd = new LogoEnd();
+				_logoEnd.replay_btn.buttonMode = true;
+				_logoEnd.replay_btn.mouseChildren = false;
+				_logoEnd.replay_btn.addEventListener(MouseEvent.CLICK, onReplayClick);
+				_logoEnd.replay_btn.addEventListener(MouseEvent.MOUSE_OVER, onBtnOver);
+				_logoEnd.replay_btn.addEventListener(MouseEvent.MOUSE_OUT, onBtnOut);
+				
+				if (GlobalVars.instance.platform == "client" || GlobalVars.instance.isZXThunder)
+				{
+					_logoEnd.removeChild(_logoEnd.share_btn);
+				}
+				else
+				{
+					if (GlobalVars.instance.enableShare)
+					{
+						_logoEnd.share_btn.gotoAndStop(1);
+						_logoEnd.share_btn.buttonMode = true;
+						_logoEnd.share_btn.mouseChildren = false;
+						_logoEnd.share_btn.addEventListener(MouseEvent.CLICK, onShareClick);
+						_logoEnd.share_btn.addEventListener(MouseEvent.MOUSE_OVER, onBtnOver);
+						_logoEnd.share_btn.addEventListener(MouseEvent.MOUSE_OUT, onBtnOut);
+					}
+					else
+					{
+						_logoEnd.share_btn.gotoAndStop(2);
+					}
+				}
+			}
+			this.addChild(_logoEnd);
+			
 			setPosition();
 		}
 		
 		private function onBtnOver(evt:MouseEvent):void
 		{
 			var t_mc:MovieClip = evt.target as MovieClip;
-//			TweenLite.to(t_mc.bg_mc, 0.2, {width:85, height:85});
+			TweenLite.to(t_mc.bg_mc, 0.2, {width:85, height:85});
 		}
 		
 		private function onBtnOut(evt:MouseEvent):void
 		{
 			var t_mc:MovieClip = evt.target as MovieClip;
-//			TweenLite.to(t_mc.bg_mc, 0.2, {width:78.75, height:78.75});
+			TweenLite.to(t_mc.bg_mc, 0.2, {width:78.75, height:78.75});
 		}
 		
 		private function onReplayClick(evt:MouseEvent):void
 		{
-			//dispatchEvent(new PlayEvent(PlayEvent.PLAY));
+			dispatchEvent(new PlayEvent(PlayEvent.PLAY));
 			ExternalInterface.call("flv_playerEvent", "onRePlay");
 		}
 		
 		private function onShareClick(evt:MouseEvent):void
 		{
-//			dispatchEvent(new EventSet(EventSet.SHOW_FACE, "share"));
+			dispatchEvent(new EventSet(EventSet.SHOW_FACE, "share"));
 		}
 		
 		private function showLoadingBuffer():void	//Buffer
@@ -406,9 +406,9 @@
 			if (!_bufferLoading){
 				var tf:TextFormat = new TextFormat("微软雅黑");
 				
-//				_bufferLoading = new BufferLoading();
-//				_bufferLoading.loadingtext.defaultTextFormat = tf;
-//				_bufferLoading.loadingtext.setTextFormat(tf);
+				_bufferLoading = new BufferLoading();
+				_bufferLoading.loadingtext.defaultTextFormat = tf;
+				_bufferLoading.loadingtext.setTextFormat(tf);
 			}
 			_bufferLoading.visible = false;
 			this.addChild( _bufferLoading );
@@ -431,9 +431,9 @@
 			}else{
 				var tf:TextFormat = new TextFormat("微软雅黑");
 				
-//				_qualityLoading = new QualityLoading();
-//				_qualityLoading.change_txt.defaultTextFormat = tf;
-//				_qualityLoading.change_txt.setTextFormat(tf);
+				_qualityLoading = new QualityLoading();
+				_qualityLoading.change_txt.defaultTextFormat = tf;
+				_qualityLoading.change_txt.setTextFormat(tf);
 			}
 			addChild( _qualityLoading );
 			this.addEventListener(Event.ENTER_FRAME, fnEnterFrameBytesLoaded);
@@ -450,7 +450,7 @@
 		
 		private function fnEnterFrameBytesLoaded(e:Event):void
 		{
-//			dispatchEvent(new PlayEvent(PlayEvent.PROGRESS));
+			dispatchEvent(new PlayEvent(PlayEvent.PROGRESS));
 		}
 		
 		public function updateProgress(num:Number):void
@@ -470,12 +470,12 @@
 			streamPercent = streamPercent > _cacheStreamPercent ? streamPercent : _cacheStreamPercent;
 			if (_processLoading)
 			{
-//				_processLoading.progress = int(streamPercent * 100);
+				_processLoading.progress = int(streamPercent * 100);
 			}
 			//只在小于100%的时候才显示缓冲
 			if(_bufferLoading && streamPercent < 1){
 				_bufferLoading.visible = true;
-//				_bufferLoading.loadingtext.text = "" + int(streamPercent * 100) + "%";
+				_bufferLoading.loadingtext.text = "" + int(streamPercent * 100) + "%";
 			}
 			
 			if (streamPercent == 1){
@@ -484,7 +484,7 @@
 				hideAll();
 				JTracer.sendMessage("VideoMask -> updateProgress :" + num + " streamPercent:" + streamPercent)
 				//hwh
-//				dispatchEvent(new PlayEvent(PlayEvent.BUFFER_END));
+				dispatchEvent(new PlayEvent(PlayEvent.BUFFER_END));
 			}
 		}
 		
@@ -507,43 +507,44 @@
 		
 		private function onplay():void
 		{
-//			hideAll();
-//			this.removeEventListener(Event.ENTER_FRAME, fnEnterFrameBytesLoaded);
-//			if(!_isBuffer || _isFirstLoading == true){
+			hideAll();
+			this.removeEventListener(Event.ENTER_FRAME, fnEnterFrameBytesLoaded);
+			if(!_isBuffer || _isFirstLoading == true){
 //				if (_mainMc.isFirstOnplaying)
-//				{
+				if (false)
+				{
 //					_mainMc.isFirstOnplaying = false;
-//					var gcid:String = Tools.getUserInfo("gcid");
-//					var ygcid:String = Tools.getUserInfo("ygcid");
-//					var usertype:Number = Number(Tools.getUserInfo("userType"));
-//					var playtype:String;
-//					if (usertype == 0 || usertype == 1 || usertype == 5)
-//					{
-//						//正常播放
-//						playtype = "0";
-//					}
-//					else
-//					{
-//						//时长卡播放
-//						playtype = "2";
-//					}
-//					//首缓冲时长上报
-//					var load_time_str:String = "";
-//					for (var i:* in GlobalVars.instance.loadTime)
-//					{
-//						load_time_str += "&" + i + "=" + GlobalVars.instance.loadTime[i];
-//					}
-//					// gdl 链接时间 
-//					var gdlConnectTimeStr:String = "&gdlConnectTime=" + GlobalVars.instance.connectGldTime;
-//					var vodAddr:String = GlobalVars.instance.vodAddr == '' ? '&vod=null' : '&vod=' + GlobalVars.instance.vodAddr;
-//					var theCCStr:String = GlobalVars.instance.statCC;
+					var gcid:String = Tools.getUserInfo("gcid");
+					var ygcid:String = Tools.getUserInfo("ygcid");
+					var usertype:Number = Number(Tools.getUserInfo("userType"));
+					var playtype:String;
+					if (usertype == 0 || usertype == 1 || usertype == 5)
+					{
+						//正常播放
+						playtype = "0";
+					}
+					else
+					{
+						//时长卡播放
+						playtype = "2";
+					}
+					//首缓冲时长上报
+					var load_time_str:String = "";
+					for (var i:* in GlobalVars.instance.loadTime)
+					{
+						load_time_str += "&" + i + "=" + GlobalVars.instance.loadTime[i];
+					}
+					// gdl 链接时间 
+					var gdlConnectTimeStr:String = "&gdlConnectTime=" + GlobalVars.instance.connectGldTime;
+					var vodAddr:String = GlobalVars.instance.vodAddr == '' ? '&vod=null' : '&vod=' + GlobalVars.instance.vodAddr;
+					var theCCStr:String = GlobalVars.instance.statCC;
 //					JTracer.sendMessage("f=firstbuffer&gcid=" + gcid + "&ygcid=" + ygcid + "&time=" + (getTimer() - _mainMc._player.startTimer) + "&playtype=" + playtype + "&flashversion=" + Capabilities.version + "&getVodTime=" + GlobalVars.instance.getVodTime + load_time_str + gdlConnectTimeStr + vodAddr);
 //					Tools.stat("f=firstbuffer&gcid=" + gcid + "&ygcid=" + ygcid + "&time=" + (getTimer() - _mainMc._player.startTimer) + "&playtype=" + playtype + "&flashversion=" + Capabilities.version + "&getVodTime=" + GlobalVars.instance.getVodTime + load_time_str + gdlConnectTimeStr + vodAddr);					
-//				}
-//				ExternalInterface.call("flv_playerEvent", "onplaying");
-//				JTracer.sendMessage('VideoMask -> onplaying');
-//			}
-//			JTracer.sendMessage('isBuffer:'+_isBuffer);
+				}
+				ExternalInterface.call("flv_playerEvent", "onplaying");
+				JTracer.sendMessage('VideoMask -> onplaying');
+			}
+			JTracer.sendMessage('isBuffer:'+_isBuffer);
 		}
 		
 		private function hideAll():void

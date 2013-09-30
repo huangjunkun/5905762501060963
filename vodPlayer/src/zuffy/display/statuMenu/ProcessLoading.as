@@ -1,4 +1,4 @@
-﻿package ctr.statuMenu 
+﻿package zuffy.display.statuMenu 
 {
 	import flash.display.MovieClip;
 	import flash.events.TimerEvent;

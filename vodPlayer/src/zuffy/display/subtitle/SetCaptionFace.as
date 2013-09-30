@@ -1,4 +1,4 @@
-﻿package ctr.subtitle 
+﻿package zuffy.display.subtitle 
 {
 	import flash.display.Loader;
 	import flash.display.MovieClip;
@@ -31,9 +31,9 @@
 	import com.common.Tools;
 	import com.global.GlobalVars;
 	import com.serialization.json.JSON;
-	import ctr.tip.ToolTip;
-	import eve.CaptionEvent;
-	import eve.EventSet;
+	import zuffy.display.tip.ToolTip;
+	import zuffy.events.CaptionEvent;
+	import zuffy.events.EventSet;
 	
 	/**
 	 * ...
@@ -374,7 +374,10 @@
 			JTracer.sendMessage("SetCaptionFace -> onLastloadLoaded, data:" + evt.target.data);
 			
 			var lastloadStr:String = String(evt.target.data);
-			var lastloadObj:Object = com.serialization.json.JSON.deserialize(lastloadStr) || { };
+			var lastloadObj:Object = com.serialization.json.JSON.deserialize(lastloadStr) || { }
+import zuffy.events.CaptionEvent;
+
+;
 			if (String(lastloadObj.ret) == "0")
 			{
 				JTracer.sendMessage("SetCaptionFace -> onLastloadLoaded, get lastload caption complete, ret:0");

@@ -1,10 +1,10 @@
-﻿package ctr.subtitle 
+﻿package zuffy.display.subtitle 
 {
 	import com.common.Cookies;
 	import com.common.Tools;
-	import ctr.setting.CaptionStyleBtn;
-	import ctr.setting.CommonSlider;
-	import eve.EventFilter;
+	import zuffy.display.setting.CaptionStyleBtn;
+	import zuffy.display.setting.CommonSlider;
+	import zuffy.events.EventFilter;
 	import flash.display.DisplayObject;
 	import flash.display.MovieClip;
 	import flash.display.Sprite;
@@ -23,9 +23,9 @@
 	import com.common.JTracer;
 	import com.global.GlobalVars;
 	import com.serialization.json.JSON;
-	import eve.CaptionEvent;
-	import eve.EventSet;
-	import ctr.filter.FilterUI;
+	import zuffy.events.CaptionEvent;
+	import zuffy.events.EventSet;
+	import zuffy.display.filter.FilterUI;
 	
 	/**
 	 * ...
