@@ -1,7 +1,5 @@
 ﻿package zuffy.core
 {
-	import com.slice.StreamList;
-	import zuffy.display.tryplay.TryEndFace;
 	import flash.display.*;
 	import flash.events.*;
 	import flash.external.*;
@@ -13,18 +11,21 @@
 	import flash.utils.*;
 	
 	import com.global.GlobalVars;
+	import com.slice.StreamList;
 	import com.greensock.TweenLite;
 	import com.serialization.json.JSON;
-	import zuffy.display.addBytes.AddBytesFace;
+
+	import zuffy.ctr.contextMenu.CreateContextMenu;
 	import zuffy.display.addBytes.NoEnoughBytesFace;
+	import zuffy.display.addBytes.AddBytesFace;
 	import zuffy.display.download.DownloadFace;
 	import zuffy.display.fileList.FileListFace;
 	import zuffy.display.question.FeedbackFace;
-	import zuffy.display.share.ShareFace;
 	import zuffy.display.subtitle.CaptionFace;
+	import zuffy.display.tryplay.TryEndFace;
+	import zuffy.display.share.ShareFace;
 	import zuffy.display.subtitle.Subtitle;
 	import zuffy.display.statuMenu.VideoMask;
-	import zuffy.ctr.contextMenu.CreateContextMenu;
 	import zuffy.display.setting.SettingSpace;
 	import zuffy.display.tip.ToolTip;
 	import zuffy.display.toolBarRight.ToolBarRightArrow;
@@ -32,7 +33,7 @@
 	import zuffy.display.toolBarTop.ToolBarTop;
 	import zuffy.display.notice.NoticeBar;
 	import zuffy.display.notice.bufferTip;
-	import com.common.*;
+	
 	import zuffy.events.TryPlayEvent;
 	import zuffy.events.CaptionEvent;
 	import zuffy.events.PlayEvent;
@@ -40,9 +41,10 @@
 	import zuffy.events.ControlEvent;
 	import zuffy.events.SetQulityEvent;
 	import zuffy.display.CtrBar;
-	import com.Player;
 	import zuffy.display.MouseControl;
-	
+	import com.common.*;
+	import com.Player;
+
 	public class PlayerCtrl extends Sprite
 	{
 		public var _ctrBar:CtrBar;
@@ -53,7 +55,7 @@
 		private var _screenEvent:Sprite;
 		private var _playFullWidth:Number;
 		private var _playFullHeight:Number;
-		public var _bufferTip:bufferTip;
+		public  var _bufferTip:bufferTip;
 		private var _noticeBar:NoticeBar;
 		private var _settingSpace:SettingSpace;
 		private var _captionFace:CaptionFace;
@@ -142,57 +144,157 @@
 		private var xlPluginCallBackArgs:Array;
 
 		private var isXLNetStreamAfterInited:Boolean = false;
-
-		private function get isValidPlayer():Boolean {
-			//域名限定;
-			var loc:String = '';
-			var dom:String = 'xunlei.com';
-			var ret:Boolean = true;
-			var reg:RegExp = null;
-			if (ExternalInterface.available){
-				var host:String = ExternalInterface.call('function(){return document.location.host;}');
-				loc = loaderInfo.url;
-				loc = loc.replace(/(http:\/\/)/, "")
-				loc = loc.slice(0, loc.indexOf('/'));
-        dom = dom.replace(/\./g, "\\.").replace(/\*/g, "\\.*");
-        reg = new RegExp(("(" + dom + ")"), "i");
-        if (reg.test(loc) && reg.test(host)){
-          ret = true;
-        }else{
-        	//直接返回false;
-        	return false;
-	        //ExternalInterface.call("window.console.log", "reg:"+reg + ' loc:'+loc);
-        };
-				ExternalInterface.call("window.console.log", "get isXLDomain:"+ret);
-				
-				//点播检测权限用户;
-        var sessionid:String = Tools.getDocumentCookieWithKey('sessionid');
-        var userid:String = Tools.getDocumentCookieWithKey('userid');
-        var usertype:int = int(Tools.getDocumentCookieWithKey('usertype'));
-        if(userid == '' || sessionid == '')ret = false; 
-        if(usertype>=0 && usertype<=3)
-        	ret = true;
-        else
-        	ret = false;
-        ExternalInterface.call('window.console.log','userid:'+userid + ' sessionid:'+sessionid + ' usertype:'+usertype);
-			};
-			
-			return ret;
-		}
 		
+
+
+
+
+		private var _params:Object;
+
 		public function PlayerCtrl()
 		{
 			Security.allowDomain("*");
+
+			if(stage){
+				init();
+			}else{
+				// 侦听该类是否被添加到了舞台显示列表
+				addEventListener(Event.ADDED_TO_STAGE, init);
+			}
 			
+		}
+
+		private function init():void{
+			// 右键菜单
+			CreateContextMenu.createMenu(this);
+			CreateContextMenu.addItem('播放特权播放器：2.9.20130513', false, false, null);
+
 			stage.scaleMode = StageScaleMode.NO_SCALE;
 			stage.align = StageAlign.TOP_LEFT;
 			stage.tabChildren = false;
-			_isInitialize = false;		
-			CreateContextMenu.createMenu(this);
-			CreateContextMenu.addItem('播放特权播放器：2.8.94.20130513', false, false, null);
+
+			_params = stage.loaderInfo.parameters;
+
+			initializePlayCtrl();
+		}
+		
+		protected function initializePlayCtrl():void 
+		{
 			stage.addEventListener(Event.RESIZE, on_stage_RESIZE);
-			stage.dispatchEvent(new Event(Event.RESIZE));
+
+			var _w:int = int(_params["width"]) ? int(_params["width"]) : stage.stageWidth;
+			var _h:int = int(_params["height"]) ? int(_params["height"]) : stage.stageHeight;
+			var _has_fullscreen:int = int(_params["fullscreenbtn"]) || 1;
+
+			GlobalVars.instance.movieType = _movieType;
+			GlobalVars.instance.windowMode = _params['windowMode'] || 'browser';
+			GlobalVars.instance.platform = _params['platform'] || 'webpage';
+			GlobalVars.instance.isMacWebPage = ((typeof _params['isMacWebPage'] != "undefined") && _params['isMacWebPage'] != 'false');
+			GlobalVars.instance.isZXThunder = int(_params["isZXThunder"]) == 1;
+			GlobalVars.instance.isStat = _params['defStatLevel'] == 2 ? true : false;	//0-不上报，1-只上报重要的，2-全部上报
+
+
+			_player = new Player(_w, _h - 35, _has_fullscreen, this);
+			_player.name="_player";
+			_player.addEventListener(Player.SET_QUALITY, handleSetQuality);
+			_player.addEventListener(Player.AUTO_PLAY, handleAutoPlay);
+			_player.addEventListener(Player.INIT_PAUSE, handleInitPause);
+			this.addChild(_player);
 			
+			_subTitle = new Subtitle(this, _player, _w, _h);
+			_subTitle.handleStageResize(stage.stageWidth, stage.stageHeight);
+			
+			_screenEvent = new Sprite();
+			_screenEvent.graphics.clear();
+			_screenEvent.graphics.beginFill(0xffffff, 0);
+			_screenEvent.graphics.drawRect(0, 0, _w, _h);
+			_screenEvent.graphics.endFill();
+			_screenEvent.doubleClickEnabled = true;
+			_screenEvent.mouseEnabled = true;
+			this.addChild(_screenEvent);
+			_screenEvent.addEventListener(MouseEvent.DOUBLE_CLICK, onDoubleClickHandle);
+			_screenEvent.addEventListener(MouseEvent.CLICK, onClickHandle);
+			
+			_videoMask = new VideoMask(this, _movieType);
+			_videoMask.addEventListener("StartPlayClick", onStartPlayClick);
+			_videoMask.addEventListener("Refresh", onRefresh);
+			this.addChild(_videoMask);
+			_videoMask.setPosition();
+			
+			_ctrBar = new CtrBar(_w,_h,_has_fullscreen, this);
+			this.addChild(_ctrBar);
+			_ctrBar.showPlayOrPauseButton='PLAY';
+			_ctrBar.flvPlayer=_player;
+			_ctrBar.available = true;
+			_ctrBar.faceLifting(stage.stageWidth);
+			
+			_mouseControl = new MouseControl(this);
+			_mouseControl.addEventListener("MOUSE_SHOWED", handleMouseShow);
+			_mouseControl.addEventListener("MOUSE_HIDED", handleMouseHide);	
+			_mouseControl.addEventListener("MOUSE_MOVEED", handleMouseMove);
+			_mouseControl.addEventListener("MOUSE_MOVEOUT", handleMouseMoveOut);
+			_mouseControl.addEventListener("SMALL_PLAY_PROGRESS_BAR", handleMouseHide2 );//缩小播放进度条;
+			
+			_bufferTip = new bufferTip(_player);
+			_bufferTip.name = "_bufferTip";
+			this.addChild(_bufferTip);
+			this.swapChildren(_ctrBar, _bufferTip);
+			
+			_toolRightArrow = new ToolBarRightArrow(this);
+			_toolRightArrow.setPosition();
+			
+			_toolRightFace = new ToolBarRight(this);
+			_toolRightFace.setPosition();
+			
+			_fileListFace = new FileListFace(this);
+			addChild(_fileListFace);
+			_fileListFace.setPosition();
+			
+			_ctrBar.y = stage.stageHeight - 33;
+			_ctrBar.faceLifting(stage.stageWidth);
+			
+			_noticeBar = new NoticeBar(this);
+			addChild(_noticeBar);
+			swapChildren(_ctrBar, _noticeBar);
+			
+			_settingSpace = new SettingSpace(_player);
+			_settingSpace.addEventListener(EventSet.SET_AUTOCHANGE, settingSpaceEventHandler);
+			_settingSpace.addEventListener(EventSet.SET_SIZE, settingSpaceEventHandler);
+			_settingSpace.addEventListener(EventSet.SET_CHANGED, settingSpaceEventHandler);
+			addChild(_settingSpace);
+			_settingSpace.setPosition();
+			
+			_captionFace = new CaptionFace();
+			addChild(_captionFace);
+			_captionFace.setPosition();
+			
+			_toolTopFace = new ToolBarTop(this);
+			_toolTopFace.addEventListener("ShowPlayingTips", showPlayingTips);
+			_toolTopFace.setPosition();
+			
+			_downloadFace = new DownloadFace();
+			addChild(_downloadFace);
+			_downloadFace.setPosition();
+			
+			_feedbackFace = new FeedbackFace(this);
+			addChild(_feedbackFace);
+			_feedbackFace.setPosition();
+			
+			_shareFace = new ShareFace();
+			addChild(_shareFace);
+			_shareFace.setPosition();
+			
+			//使tooltip显示在最上层
+			Tools.registerToolTip(this);
+			
+			setObjectLayer();
+			initOther();
+			initJsInterface();
+			initStageEvent();
+			loadPanel(null);
+			initXLPlugins(GlobalVars.instance.isMacWebPage);
+
+
 			_checkUserLoader = new URLLoader();
 			_checkUserLoader.addEventListener(Event.COMPLETE, onCheckUserComplete);
 			_checkUserLoader.addEventListener(IOErrorEvent.IO_ERROR, onCheckUserIOError);
@@ -202,8 +304,52 @@
 			_checkFlowLoader.addEventListener(Event.COMPLETE, onCheckFlowComplete);
 			_checkFlowLoader.addEventListener(IOErrorEvent.IO_ERROR, onCheckFlowIOError);
 			_checkFlowLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onCheckFlowSecurityError);
+
 		}
 		
+		protected function on_stage_RESIZE(e:Event):void{
+
+			var _w:int = int(_params["width"]) ? int(_params["width"]) : stage.stageWidth;
+			var _h:int = int(_params["height"]) ? int(_params["height"]) : stage.stageHeight;
+			var _has_fullscreen:int = int(_params["fullscreenbtn"]) || 1;
+
+			if (_toolRightArrow)
+			{
+				_toolRightArrow.setPosition();
+			}
+			if (_toolRightFace)
+			{
+				_toolRightFace.setPosition();
+				_toolRightFace.hide(true);
+			}
+			_ctrBar.y = stage.stageHeight - 33;
+			_ctrBar.faceLifting(stage.stageWidth);
+			_player.resizePlayerSize(stage.stageWidth,stage.stageHeight );
+			_screenEvent.width = stage.stageWidth;
+			_screenEvent.height = stage.stageHeight;
+			changePlayerSize();
+			_subTitle.handleStageResize(stage.stageWidth, stage.stageHeight, _isFullScreen);
+			_captionFace.setPosition();
+			_fileListFace.setPosition();
+			if (_addBytesFace)
+			{
+				_addBytesFace.setPosition();
+			}
+			if (_noEnoughFace)
+			{
+				_noEnoughFace.setPosition();
+			}
+			if (_tryEndFace)
+			{
+				_tryEndFace.setPosition();
+			}
+			_shareFace.setPosition();
+			_feedbackFace.setPosition();
+			_videoMask.setPosition();
+			_downloadFace.setPosition();
+
+		}
+
 		//显示系统时间
 		public function setSystemTime():void
 		{
@@ -854,164 +1000,8 @@
 			Tools.windowOpen(GlobalVars.instance.url_home, "_blank");
 		}
 		
-		/**
-		 * PlayCtrl初始化的操作;
-		 * 主要是调整 UI
-		 * 第一次是先初始化各个控制器,监听信息,调整UI
-		 */
-		private function initializePlayCtrl():void 
-		{
-			var params:Object = stage.loaderInfo.parameters;
-			var _w:int = int(params["width"]) ? int(params["width"]) : stage.stageWidth;
-			var _h:int = int(params["height"]) ? int(params["height"]) : stage.stageHeight;
-			var _has_fullscreen:int = int(params["fullscreenbtn"]) || 1;
-			_movieType = params['movieType'] ? params['movieType'] : 'movie';
-			GlobalVars.instance.movieType = _movieType;
-			GlobalVars.instance.windowMode = params['windowMode'] || 'browser';
-			GlobalVars.instance.platform = params['platform'] || 'webpage';
-			GlobalVars.instance.isMacWebPage = ((typeof params['isMacWebPage'] != "undefined") && params['isMacWebPage'] != 'false');
-			GlobalVars.instance.isZXThunder = int(params["isZXThunder"]) == 1;
-			//0-不上报，1-只上报重要的，2-全部上报
-			GlobalVars.instance.isStat = params['defStatLevel'] == 2 ? true : false;
-			if ( _w == 0) return;
-			if (_isInitialize){
-				if (_toolRightArrow)
-				{
-					_toolRightArrow.setPosition();
-				}
-				if (_toolRightFace)
-				{
-					_toolRightFace.setPosition();
-					_toolRightFace.hide(true);
-				}
-				_ctrBar.y = stage.stageHeight - 33;
-				_ctrBar.faceLifting(stage.stageWidth);
-				_player.resizePlayerSize(stage.stageWidth,stage.stageHeight );
-				_screenEvent.width = stage.stageWidth;
-				_screenEvent.height = stage.stageHeight;
-				changePlayerSize();
-				_subTitle.handleStageResize(stage.stageWidth, stage.stageHeight, _isFullScreen);
-				_captionFace.setPosition();
-				_fileListFace.setPosition();
-				if (_addBytesFace)
-				{
-					_addBytesFace.setPosition();
-				}
-				if (_noEnoughFace)
-				{
-					_noEnoughFace.setPosition();
-				}
-				if (_tryEndFace)
-				{
-					_tryEndFace.setPosition();
-				}
-				_shareFace.setPosition();
-				_feedbackFace.setPosition();
-				_videoMask.setPosition();
-				_downloadFace.setPosition();
-			}else {
-				_isInitialize = true;
-				_player = new Player(_w, _h - 35, _has_fullscreen, this);
-				_player.name="_player";
-				_player.addEventListener(Player.SET_QUALITY, handleSetQuality);
-				_player.addEventListener(Player.AUTO_PLAY, handleAutoPlay);
-				_player.addEventListener(Player.INIT_PAUSE, handleInitPause);
-				this.addChild(_player);
-				
-				_subTitle = new Subtitle(this, _player, _w, _h);
-				_subTitle.handleStageResize(stage.stageWidth, stage.stageHeight);
-				
-				_screenEvent = new Sprite();
-				_screenEvent.graphics.clear();
-				_screenEvent.graphics.beginFill(0xffffff, 0);
-				_screenEvent.graphics.drawRect(0, 0, _w, _h);
-				_screenEvent.graphics.endFill();
-				_screenEvent.doubleClickEnabled = true;
-				_screenEvent.mouseEnabled = true;
-				this.addChild(_screenEvent);
-				_screenEvent.addEventListener(MouseEvent.DOUBLE_CLICK, onDoubleClickHandle);
-				_screenEvent.addEventListener(MouseEvent.CLICK, onClickHandle);
-				
-				_videoMask = new VideoMask(this, _movieType);
-				_videoMask.addEventListener("StartPlayClick", onStartPlayClick);
-				_videoMask.addEventListener("Refresh", onRefresh);
-				this.addChild(_videoMask);
-				_videoMask.setPosition();
-				
-				_ctrBar = new CtrBar(_w,_h,_has_fullscreen, this);
-				this.addChild(_ctrBar);
-				_ctrBar.showPlayOrPauseButton='PLAY';
-				_ctrBar.flvPlayer=_player;
-				_ctrBar.available = true;
-				_ctrBar.faceLifting(stage.stageWidth);
-				
-				_mouseControl = new MouseControl(this);
-				_mouseControl.addEventListener("MOUSE_SHOWED", handleMouseShow);
-				_mouseControl.addEventListener("MOUSE_HIDED", handleMouseHide);	
-				_mouseControl.addEventListener("MOUSE_MOVEED", handleMouseMove);
-				_mouseControl.addEventListener("MOUSE_MOVEOUT", handleMouseMoveOut);
-				_mouseControl.addEventListener("SMALL_PLAY_PROGRESS_BAR", handleMouseHide2 );//缩小播放进度条;
-				
-				_bufferTip = new bufferTip(_player);
-				_bufferTip.name = "_bufferTip";
-				this.addChild(_bufferTip);
-				this.swapChildren(_ctrBar, _bufferTip);
-				
-				_toolRightArrow = new ToolBarRightArrow(this);
-				_toolRightArrow.setPosition();
-				
-				_toolRightFace = new ToolBarRight(this);
-				_toolRightFace.setPosition();
-				
-				_fileListFace = new FileListFace(this);
-				addChild(_fileListFace);
-				_fileListFace.setPosition();
-				
-				_ctrBar.y = stage.stageHeight - 33;
-				_ctrBar.faceLifting(stage.stageWidth);
-				
-				_noticeBar = new NoticeBar(this);
-				addChild(_noticeBar);
-				swapChildren(_ctrBar, _noticeBar);
-				
-				_settingSpace = new SettingSpace(_player);
-				_settingSpace.addEventListener(EventSet.SET_AUTOCHANGE, settingSpaceEventHandler);
-				_settingSpace.addEventListener(EventSet.SET_SIZE, settingSpaceEventHandler);
-				_settingSpace.addEventListener(EventSet.SET_CHANGED, settingSpaceEventHandler);
-				addChild(_settingSpace);
-				_settingSpace.setPosition();
-				
-				_captionFace = new CaptionFace();
-				addChild(_captionFace);
-				_captionFace.setPosition();
-				
-				_toolTopFace = new ToolBarTop(this);
-				_toolTopFace.addEventListener("ShowPlayingTips", showPlayingTips);
-				_toolTopFace.setPosition();
-				
-				_downloadFace = new DownloadFace();
-				addChild(_downloadFace);
-				_downloadFace.setPosition();
-				
-				_feedbackFace = new FeedbackFace(this);
-				addChild(_feedbackFace);
-				_feedbackFace.setPosition();
-				
-				_shareFace = new ShareFace();
-				addChild(_shareFace);
-				_shareFace.setPosition();
-				
-				//使tooltip显示在最上层
-				Tools.registerToolTip(this);
-				
-				setObjectLayer();
-				initOther();
-				initJsInterface();
-				initStageEvent();
-				loadPanel(null);
-				initXLPlugins(GlobalVars.instance.isMacWebPage);
-			}
-		}
+	
+		
 		private function initOther():void{
 			
 		}
@@ -2977,7 +2967,7 @@
 			}
 		}
 
-		public function flv_ready():Boolean{return _isInitialize;}
+		public function flv_ready():Boolean{return true;}
 		
 		public function flv_getDefaultFormat():String
 		{
@@ -3325,11 +3315,6 @@
 			var bn:Number = _player.bufferEndTime;
 			JTracer.sendMessage("PlayerCtrl -> js回调getBufferEnd, 返回_player.bufferEnd:" + bn);
 			return bn;
-		}
-		
-		private function on_stage_RESIZE(e:Event):void 
-		{
-			initializePlayCtrl();
 		}
 		
 		private function hideSideChangeQuilty():void
