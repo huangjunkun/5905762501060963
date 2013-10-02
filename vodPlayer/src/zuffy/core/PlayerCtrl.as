@@ -1,49 +1,82 @@
 ﻿package zuffy.core
 {
-	import flash.display.*;
-	import flash.events.*;
-	import flash.external.*;
-	import flash.filters.*;
-	import flash.net.*;
-	import flash.system.*;
-	import flash.text.*;
-	import flash.ui.*;
-	import flash.utils.*;
-	
+	import com.Player;
+	import com.common.Cookies;
+	import com.common.JTracer;
+	import com.common.StringUtil;
+	import com.common.Tools;
 	import com.global.GlobalVars;
-	import com.slice.StreamList;
 	import com.greensock.TweenLite;
 	import com.serialization.json.JSON;
-
+	import com.slice.StreamList;
+	
+	import flash.display.Bitmap;
+	import flash.display.BitmapData;
+	import flash.display.Loader;
+	import flash.display.MovieClip;
+	import flash.display.Sprite;
+	import flash.display.StageAlign;
+	import flash.display.StageDisplayState;
+	import flash.display.StageScaleMode;
+	import flash.events.Event;
+	import flash.events.FullScreenEvent;
+	import flash.events.IOErrorEvent;
+	import flash.events.KeyboardEvent;
+	import flash.events.MouseEvent;
+	import flash.events.SecurityErrorEvent;
+	import flash.events.TimerEvent;
+	import flash.external.ExternalInterface;
+	import flash.filters.BitmapFilterQuality;
+	import flash.filters.GlowFilter;
+	import flash.net.URLLoader;
+	import flash.net.URLRequest;
+	import flash.net.URLRequestMethod;
+	import flash.net.URLVariables;
+	import flash.net.sendToURL;
+	import flash.system.ApplicationDomain;
+	import flash.system.Capabilities;
+	import flash.system.LoaderContext;
+	import flash.system.Security;
+	import flash.text.TextField;
+	import flash.text.TextFormat;
+	import flash.ui.Mouse;
+	import flash.utils.Timer;
+	import flash.utils.clearInterval;
+	import flash.utils.clearTimeout;
+	import flash.utils.getTimer;
+	import flash.utils.setInterval;
+	import flash.utils.setTimeout;
+	
 	import zuffy.ctr.contextMenu.CreateContextMenu;
 	import zuffy.display.addBytes.NoEnoughBytesFace;
+	import zuffy.display.CtrBar;
+	import zuffy.display.MouseControl;
 	import zuffy.display.addBytes.AddBytesFace;
+	import zuffy.display.addBytes.NoEnoughBytesFace;
 	import zuffy.display.download.DownloadFace;
 	import zuffy.display.fileList.FileListFace;
+	import zuffy.display.notice.NoticeBar;
+	import zuffy.display.notice.bufferTip;
 	import zuffy.display.question.FeedbackFace;
-	import zuffy.display.subtitle.CaptionFace;
 	import zuffy.display.tryplay.TryEndFace;
+	import zuffy.display.setting.SettingSpace;
 	import zuffy.display.share.ShareFace;
 	import zuffy.display.subtitle.Subtitle;
 	import zuffy.display.statuMenu.VideoMask;
-	import zuffy.display.setting.SettingSpace;
+	import zuffy.display.tryplay.TryEndFace;
+	import zuffy.display.subtitle.CaptionFace;
+	import zuffy.display.subtitle.Subtitle;
 	import zuffy.display.tip.ToolTip;
-	import zuffy.display.toolBarRight.ToolBarRightArrow;
 	import zuffy.display.toolBarRight.ToolBarRight;
+	import zuffy.display.toolBarRight.ToolBarRightArrow;
 	import zuffy.display.toolBarTop.ToolBarTop;
-	import zuffy.display.notice.NoticeBar;
-	import zuffy.display.notice.bufferTip;
-	
-	import zuffy.events.TryPlayEvent;
+	import zuffy.display.tryplay.TryEndFace;
 	import zuffy.events.CaptionEvent;
-	import zuffy.events.PlayEvent;
-	import zuffy.events.EventSet;
 	import zuffy.events.ControlEvent;
+	import zuffy.events.EventSet;
+	import zuffy.events.PlayEvent;
 	import zuffy.events.SetQulityEvent;
-	import zuffy.display.CtrBar;
-	import zuffy.display.MouseControl;
-	import com.common.*;
-	import com.Player;
+	import zuffy.events.TryPlayEvent;
 
 	public class PlayerCtrl extends Sprite
 	{
@@ -75,7 +108,6 @@
 		private var _playerRealHeight:Number;
 		private var _isDoubleClick:Boolean = false;
 		private var _isFullScreen:Boolean = false;
-		private var _movieType:String;
 		private var _isBuffering:Boolean;
 		private var _seekDelayTimer:Timer;
 		private var _seekDelayTimer2:Timer;
@@ -147,8 +179,6 @@
 		
 
 
-
-
 		private var _params:Object;
 
 		public function PlayerCtrl()
@@ -175,31 +205,61 @@
 
 			_params = stage.loaderInfo.parameters;
 
-			initializePlayCtrl();
+			initGlobalData(_params);
+			initializePlayCtrl(_params);
+		}
+
+		protected function initGlobalData(tParams:Object):void{
+			GlobalVars.instance.movieType = tParams['movieType'] ? tParams['movieType'] : 'movie';
+			GlobalVars.instance.windowMode = tParams['windowMode'] || 'browser';
+			GlobalVars.instance.platform = tParams['platform'] || 'webpage';
+			GlobalVars.instance.isMacWebPage = ((typeof tParams['isMacWebPage'] != "undefined") && tParams['isMacWebPage'] != 'false');
+			GlobalVars.instance.isZXThunder = int(tParams["isZXThunder"]) == 1;
+			GlobalVars.instance.isStat = tParams['defStatLevel'] == 2 ? true : false;	//0-不上报，1-只上报重要的，2-全部上报
 		}
 		
-		protected function initializePlayCtrl():void 
+		protected function initializePlayCtrl(tParams:Object):void 
 		{
 			stage.addEventListener(Event.RESIZE, on_stage_RESIZE);
 
 			var _w:int = int(_params["width"]) ? int(_params["width"]) : stage.stageWidth;
 			var _h:int = int(_params["height"]) ? int(_params["height"]) : stage.stageHeight;
+			
+			// 初始化基本界面
+			initializeUI(_w, _h);
+			
+			// 调整UI顺序
+			setObjectLayer();
+
+			// 与js通信接口
+			initJsInterface();
+
+			// 初始化其他;
+			initOther();
+			
+			initStageEvent();
+
+			loadPanel(null);
+
+			initXLPlugins(GlobalVars.instance.isMacWebPage);
+
+
+			_checkUserLoader = new URLLoader();
+			_checkUserLoader.addEventListener(Event.COMPLETE, onCheckUserComplete);
+			_checkUserLoader.addEventListener(IOErrorEvent.IO_ERROR, onCheckUserIOError);
+			_checkUserLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onCheckUserSecurityError);
+			
+			_checkFlowLoader = new URLLoader();
+			_checkFlowLoader.addEventListener(Event.COMPLETE, onCheckFlowComplete);
+			_checkFlowLoader.addEventListener(IOErrorEvent.IO_ERROR, onCheckFlowIOError);
+			_checkFlowLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onCheckFlowSecurityError);
+
+		}
+
+		protected function initializeUI(tWidth:int, tHeight:int):void{
+			
 			var _has_fullscreen:int = int(_params["fullscreenbtn"]) || 1;
 
-			GlobalVars.instance.movieType = _movieType;
-			GlobalVars.instance.windowMode = _params['windowMode'] || 'browser';
-			GlobalVars.instance.platform = _params['platform'] || 'webpage';
-			GlobalVars.instance.isMacWebPage = ((typeof _params['isMacWebPage'] != "undefined") && _params['isMacWebPage'] != 'false');
-			GlobalVars.instance.isZXThunder = int(_params["isZXThunder"]) == 1;
-			GlobalVars.instance.isStat = _params['defStatLevel'] == 2 ? true : false;	//0-不上报，1-只上报重要的，2-全部上报
-
-
-			_player = new Player(_w, _h - 35, _has_fullscreen, this);
-			_player.name="_player";
-			_player.addEventListener(Player.SET_QUALITY, handleSetQuality);
-			_player.addEventListener(Player.AUTO_PLAY, handleAutoPlay);
-			_player.addEventListener(Player.INIT_PAUSE, handleInitPause);
-			this.addChild(_player);
 			
 			_subTitle = new Subtitle(this, _player, _w, _h);
 			_subTitle.handleStageResize(stage.stageWidth, stage.stageHeight);
@@ -286,25 +346,6 @@
 			
 			//使tooltip显示在最上层
 			Tools.registerToolTip(this);
-			
-			setObjectLayer();
-			initOther();
-			initJsInterface();
-			initStageEvent();
-			loadPanel(null);
-			initXLPlugins(GlobalVars.instance.isMacWebPage);
-
-
-			_checkUserLoader = new URLLoader();
-			_checkUserLoader.addEventListener(Event.COMPLETE, onCheckUserComplete);
-			_checkUserLoader.addEventListener(IOErrorEvent.IO_ERROR, onCheckUserIOError);
-			_checkUserLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onCheckUserSecurityError);
-			
-			_checkFlowLoader = new URLLoader();
-			_checkFlowLoader.addEventListener(Event.COMPLETE, onCheckFlowComplete);
-			_checkFlowLoader.addEventListener(IOErrorEvent.IO_ERROR, onCheckFlowIOError);
-			_checkFlowLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onCheckFlowSecurityError);
-
 		}
 		
 		protected function on_stage_RESIZE(e:Event):void{
@@ -362,7 +403,7 @@
 		}
 		
 		//切换视频
-		public function exchangeVideo():void
+		protected function exchangeVideo():void
 		{
 			//切换后，取消之前的字幕
 			_subTitle.hideCaption({surl:null, scid:null});
@@ -1013,7 +1054,7 @@
 		/**
 		 * 监听各个控制器及自身发出的信息、事件;
 		 */
-		private function initStageEvent():void
+		protected function initStageEvent():void
 		{
 			this.addEventListener(PlayEvent.INVALID, playEventHandler);
 			this.addEventListener(PlayEvent.PLAY, playEventHandler);
@@ -1071,7 +1112,7 @@
 		{
 			_subTitle.setStyle(evt.info);
 		}
-		
+
 		/**
 		 * 显示播放中的提示
 		 */
@@ -1083,7 +1124,7 @@
 		/**
 		 * 生成 player txt tip.
 		 */
-		private function showPlayerTxtTips(tips:String, time:Number):void
+		protected function showPlayerTxtTips(tips:String, time:Number):void
 		{
 			if (!_playerTxtTips)
 			{
@@ -1111,7 +1152,7 @@
 		/**
 		 * 移除 player txt tip.
 		 */
-		private function hidePlayerTxtTips():void
+		protected function hidePlayerTxtTips():void
 		{
 			if (_playerTxtTips)
 			{
@@ -1364,7 +1405,7 @@
 			
 			_ctrBar.dispatchPlay();
 		}
-		
+
 		private function setCaptionContent(evt:CaptionEvent):void
 		{
 			_subTitle.setContent(evt.info.toString());
@@ -3016,8 +3057,8 @@
 			
 			var tf:TextFormat = new TextFormat("宋体");
 			
-			_shareFace.url_txt.text = url;
-			_shareFace.url_txt.setTextFormat(tf);
+//			_shareFace.url_txt.text = url;
+//			_shareFace.url_txt.setTextFormat(tf);
 		}
 		
 		public function flv_playOtherFail(boo:Boolean, tips:String = ""):void
@@ -3338,7 +3379,7 @@
 			}
 		}
 		
-		public function hideAllLayer():void
+		protected function hideAllLayer():void
 		{
 			if (_settingSpace.visible) {
 				_settingSpace.showSetFace();
@@ -3366,7 +3407,7 @@
 			}
 		}
 		
-		private function setObjectLayer():void
+		protected function setObjectLayer():void
 		{
 			var layerIndexArr:Array = [];
 			layerIndexArr.push(getChildIndex(_settingSpace));
@@ -3608,6 +3649,15 @@
 		public function get isStartPlayLoading():Boolean
 		{
 			return _videoMask.isStartPlayLoading;
+		}
+		
+		// 字幕时间计算
+		private function handlGetTitleTimer(e:CaptionEvent):void
+		{
+			var subtitle:Subtitle = e.target as Subtitle;
+			var isvalid:Boolean = !(_player.isPause || _player.isStop || isBuffering);
+			if(isvalid)
+			subtitle.setPlayerTime(_player.time, isStartPlayLoading);
 		}
 	}
 }

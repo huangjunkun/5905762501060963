@@ -66,13 +66,11 @@
 		private var _timeInterval:Number;
 		private var _isGrade:Boolean;
 		
-		public function Subtitle(mainMc:PlayerCtrl, player:Player, w:Number = 352, h:Number = 293) 
+		public function Subtitle(mainMc:PlayerCtrl, w:Number = 352, h:Number = 293) 
 		{
-			super();
 			this.visible = false;
 			_mainMc = mainMc;
 			_mainMc.addChild(this);
-			_player = player;
 			_currentWidth = w;
 			_currentHeight = h;
 			initializeViews();
@@ -309,7 +307,10 @@
 		private function initializeGetSubtitleTimer():void
 		{
 			_getTitleTimer = new Timer(50);
-			_getTitleTimer.addEventListener(TimerEvent.TIMER, handlGetTitleTimer);
+			_getTitleTimer.addEventListener(TimerEvent.TIMER, function handlGetTitleTimer():void{
+				if(_scid)
+				dispatchEvent(new CaptionEvent(CaptionEvent.GET_TITLE_TIMER));
+			});
 		}
 		
 		private function initRegExp():void
@@ -321,53 +322,6 @@
 			_reg_r = /\\r/g;
 			_reg_n = /\\n/g;
 			_reg_N = /\\N/g;
-		}
-		
-		private function handlGetTitleTimer(e:TimerEvent):void
-		{
-			if (_mainMc.isStartPlayLoading)
-			{
-				_txtSubTitle.text = "";
-				return;
-			}
-			
-			var time:Number = _player.time;
-			var subTitle:String = getText(time * 1000 - _captionStamp);
-			_txtSubTitle.htmlText = subTitle;
-			_txtSubTitle.height = _txtSubTitle.textHeight + 10;
-			
-			this.y = stage.stageHeight - _txtSubTitle.textHeight - 50;
-			
-			//字幕打分
-			_endTime = getTimer();
-			_timeInterval = _endTime - _startTime;
-			_startTime = _endTime;
-			
-			if (!_scid || _player.isPause || _player.isStop || _player.main_mc.isBuffering)
-			{
-				return;
-			}
-			
-			_curTime += _timeInterval;
-			if (_curTime > _totalTime && !_isGrade)
-			{
-				_isGrade = true;
-				
-				var gcid:String = Tools.getUserInfo("ygcid");
-				var cid:String = Tools.getUserInfo("ycid");
-				var scid:String = _scid;
-				
-				var params:URLVariables = new URLVariables();
-				params.a = "";
-				
-				var req:URLRequest = new URLRequest(GlobalVars.instance.url_subtitle_grade + "?gcid=" + gcid + "&cid=" + cid + "&scid=" + scid + "&type=0");
-				req.method = URLRequestMethod.POST;
-				req.data = params;
-				
-				JTracer.sendMessage("Subtitle -> subtitle grade, end timer, getTimer():" + _curTime + ", url:" + req.url);
-				
-				sendToURL(req);
-			}
 		}
 		
 		private function toARGB(color:uint):String
@@ -585,6 +539,45 @@
             
             return strRet;
         }		
+
+        public function setPlayerTime(time:Number, isStartPlayLoading:Boolean):void{
+        	if (isStartPlayLoading)
+			{
+				_txtSubTitle.text = "";
+				return;
+			}
+			
+			var subTitle:String = getText(time * 1000 - _captionStamp);
+			_txtSubTitle.htmlText = subTitle;
+			_txtSubTitle.height = _txtSubTitle.textHeight + 10;
+			
+			this.y = stage.stageHeight - _txtSubTitle.textHeight - 50;
+
+			//字幕打分
+			_endTime = getTimer();
+			_timeInterval = _endTime - _startTime;
+			_startTime = _endTime;
+			_curTime += _timeInterval;
+			if (_curTime > _totalTime && !_isGrade)
+			{
+				_isGrade = true;
+				
+				var gcid:String = Tools.getUserInfo("ygcid");
+				var cid:String = Tools.getUserInfo("ycid");
+				var scid:String = _scid;
+				
+				var params:URLVariables = new URLVariables();
+				params.a = "";
+				
+				var req:URLRequest = new URLRequest(GlobalVars.instance.url_subtitle_grade + "?gcid=" + gcid + "&cid=" + cid + "&scid=" + scid + "&type=0");
+				req.method = URLRequestMethod.POST;
+				req.data = params;
+				
+				JTracer.sendMessage("Subtitle -> subtitle grade, end timer, getTimer():" + _curTime + ", url:" + req.url);
+				
+				sendToURL(req);
+			}
+        }
 		
 		//flash大小改变后
 		public function handleStageResize(width:Number,height:Number,isFullScreen:Boolean = false):void
