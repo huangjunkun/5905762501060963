@@ -84,21 +84,11 @@
 		public var _player:Player;
 		public var _isError:Boolean = false;
 		public var _videoMask:VideoMask;
-		
 		private var _screenEvent:Sprite;
 		private var _playFullWidth:Number;
 		private var _playFullHeight:Number;
 		public  var _bufferTip:bufferTip;
-		private var _noticeBar:NoticeBar;
-		private var _settingSpace:SettingSpace;
-		private var _captionFace:CaptionFace;
-		private var _fileListFace:FileListFace;
-		private var _downloadFace:DownloadFace;
-		private var _feedbackFace:FeedbackFace;
-		private var _shareFace:ShareFace;
-		private var _toolTopFace:ToolBarTop;
-		private var _toolRightFace:ToolBarRight;
-		private var _toolRightArrow:ToolBarRightArrow;
+		private var _noticeBar:NoticeBar;;
 		private var _showRightTimer:Timer;
 		private var _hideRightTimer:Timer;
 		private var _isInitialize:Boolean = false;
@@ -135,9 +125,6 @@
 		private var _snptLoader:Loader;
 		private var _isValid:Boolean = true;				//登陆是否有效，默认有效
 		private var _isNoEnoughBytes:Boolean;				//是否流量不足
-		private var _addBytesFace:AddBytesFace;
-		private var _noEnoughFace:NoEnoughBytesFace;
-		private var _tryEndFace:MovieClip;
 		private var _videoUrlArray:Array;
 		private var _isFirstTips:Boolean = true;			//是否第一次提示上次播放时间点或字幕提示
 		private var _isFirstListTips:Boolean = true;		//是否第一次提示文件列表
@@ -151,7 +138,6 @@
 		private var _expiresTime:Number;					//过期时间
 		private var _isFlowChecked:Boolean;					//是否已经查询完流量
 		private var _isPlayStart:Boolean;					//影片是否已经开播
-		private var _isPauseForever:Boolean;				//无时长普通会员是否已经暂停播放
 		private var _isShowStopFace:Boolean;				//是否显示播放完界面
 		private var _snptIndex:uint;						//i帧截图地址index
 		private var _snptArray:Array = [];					//i帧截图地址数组
@@ -159,16 +145,6 @@
 		private var _snptBmdArray:Array = [];				//i帧截图图片数组
 		private var _isReportedScreenShotError:Boolean;		//是否已上报i帧截图跨域错误
 		private var _formatsObj:Object;
-		private var _lastMouseDelta:Number = 0;
-		private var _curMouseDelta:Number = 0;
-		private var _timeIntervalID:int;
-		private var _filterIntervalID:int;
-		private var _lastKeyDelta:Number = 0;
-		private var _curKeyDelta:Number = 0;
-		private var _keyDeltaID:int;
-		private var _isPanelLoaded:Boolean;
-		private var _panelLoader:Loader;
-		private var _completeFunc:Function;
 		private var _isShowAutoloadTips:Boolean;
 		private var _isSnptLoaded:Boolean;
 
@@ -222,8 +198,8 @@
 		{
 			stage.addEventListener(Event.RESIZE, on_stage_RESIZE);
 
-			var _w:int = int(_params["width"]) ? int(_params["width"]) : stage.stageWidth;
-			var _h:int = int(_params["height"]) ? int(_params["height"]) : stage.stageHeight;
+			var _w:int = int(tParams["width"]) ? int(tParams["width"]) : stage.stageWidth;
+			var _h:int = int(tParams["height"]) ? int(tParams["height"]) : stage.stageHeight;
 			
 			// 初始化基本界面
 			initializeUI(_w, _h);
@@ -238,8 +214,6 @@
 			initOther();
 			
 			initStageEvent();
-
-			loadPanel(null);
 
 			initXLPlugins(GlobalVars.instance.isMacWebPage);
 
@@ -260,7 +234,13 @@
 			
 			var _has_fullscreen:int = int(_params["fullscreenbtn"]) || 1;
 
-			
+			_player = new Player(_w, _h - 35, _has_fullscreen, this);
+			_player.name="_player";
+			_player.addEventListener(Player.SET_QUALITY, handleSetQuality);
+			_player.addEventListener(Player.AUTO_PLAY, handleAutoPlay);
+			_player.addEventListener(Player.INIT_PAUSE, handleInitPause);
+			this.addChild(_player);
+
 			_subTitle = new Subtitle(this, _player, _w, _h);
 			_subTitle.handleStageResize(stage.stageWidth, stage.stageHeight);
 			
@@ -289,9 +269,9 @@
 			_ctrBar.faceLifting(stage.stageWidth);
 			
 			_mouseControl = new MouseControl(this);
-			_mouseControl.addEventListener("MOUSE_SHOWED", handleMouseShow);
-			_mouseControl.addEventListener("MOUSE_HIDED", handleMouseHide);	
-			_mouseControl.addEventListener("MOUSE_MOVEED", handleMouseMove);
+			_mouseControl.addEventListener("MOUSE_SHOWED", handleMouseInside);
+			_mouseControl.addEventListener("MOUSE_HIDED", handleMouseOutSide);	
+			_mouseControl.addEventListener("MOUSE_MOVEED", handleMouseInside);
 			_mouseControl.addEventListener("MOUSE_MOVEOUT", handleMouseMoveOut);
 			_mouseControl.addEventListener("SMALL_PLAY_PROGRESS_BAR", handleMouseHide2 );//缩小播放进度条;
 			
@@ -300,95 +280,25 @@
 			this.addChild(_bufferTip);
 			this.swapChildren(_ctrBar, _bufferTip);
 			
-			_toolRightArrow = new ToolBarRightArrow(this);
-			_toolRightArrow.setPosition();
-			
-			_toolRightFace = new ToolBarRight(this);
-			_toolRightFace.setPosition();
-			
-			_fileListFace = new FileListFace(this);
-			addChild(_fileListFace);
-			_fileListFace.setPosition();
-			
 			_ctrBar.y = stage.stageHeight - 33;
 			_ctrBar.faceLifting(stage.stageWidth);
 			
 			_noticeBar = new NoticeBar(this);
 			addChild(_noticeBar);
 			swapChildren(_ctrBar, _noticeBar);
-			
-			_settingSpace = new SettingSpace(_player);
-			_settingSpace.addEventListener(EventSet.SET_AUTOCHANGE, settingSpaceEventHandler);
-			_settingSpace.addEventListener(EventSet.SET_SIZE, settingSpaceEventHandler);
-			_settingSpace.addEventListener(EventSet.SET_CHANGED, settingSpaceEventHandler);
-			addChild(_settingSpace);
-			_settingSpace.setPosition();
-			
-			_captionFace = new CaptionFace();
-			addChild(_captionFace);
-			_captionFace.setPosition();
-			
-			_toolTopFace = new ToolBarTop(this);
-			_toolTopFace.addEventListener("ShowPlayingTips", showPlayingTips);
-			_toolTopFace.setPosition();
-			
-			_downloadFace = new DownloadFace();
-			addChild(_downloadFace);
-			_downloadFace.setPosition();
-			
-			_feedbackFace = new FeedbackFace(this);
-			addChild(_feedbackFace);
-			_feedbackFace.setPosition();
-			
-			_shareFace = new ShareFace();
-			addChild(_shareFace);
-			_shareFace.setPosition();
-			
-			//使tooltip显示在最上层
-			Tools.registerToolTip(this);
 		}
 		
 		protected function on_stage_RESIZE(e:Event):void{
-
-			var _w:int = int(_params["width"]) ? int(_params["width"]) : stage.stageWidth;
-			var _h:int = int(_params["height"]) ? int(_params["height"]) : stage.stageHeight;
-			var _has_fullscreen:int = int(_params["fullscreenbtn"]) || 1;
-
-			if (_toolRightArrow)
-			{
-				_toolRightArrow.setPosition();
-			}
-			if (_toolRightFace)
-			{
-				_toolRightFace.setPosition();
-				_toolRightFace.hide(true);
-			}
 			_ctrBar.y = stage.stageHeight - 33;
 			_ctrBar.faceLifting(stage.stageWidth);
+
 			_player.resizePlayerSize(stage.stageWidth,stage.stageHeight );
+
 			_screenEvent.width = stage.stageWidth;
 			_screenEvent.height = stage.stageHeight;
 			changePlayerSize();
-			_subTitle.handleStageResize(stage.stageWidth, stage.stageHeight, _isFullScreen);
-			_captionFace.setPosition();
-			_fileListFace.setPosition();
-			if (_addBytesFace)
-			{
-				_addBytesFace.setPosition();
-			}
-			if (_noEnoughFace)
-			{
-				_noEnoughFace.setPosition();
-			}
-			if (_tryEndFace)
-			{
-				_tryEndFace.setPosition();
-			}
-			_shareFace.setPosition();
-			_feedbackFace.setPosition();
-			_videoMask.setPosition();
-			_downloadFace.setPosition();
 
+			_subTitle.handleStageResize(stage.stageWidth, stage.stageHeight, _isFullScreen);
 		}
 
 		//显示系统时间
@@ -407,18 +317,8 @@
 		{
 			//切换后，取消之前的字幕
 			_subTitle.hideCaption({surl:null, scid:null});
-			//删除全部字幕
-			_captionFace.clearCaption();
-			//下载面板重置
-			_downloadFace.setAllDisabled();
 		}
-		
-		//播放下一集
-		public function playNext():void
-		{
-			_fileListFace.playNext();
-		}
-		
+
 		//登陆异常
 		public function showInvalidLoginLogo():void
 		{
@@ -441,79 +341,6 @@
 			
 			_ctrBar.dispatchStop();
 			_videoMask.showErrorNotice(VideoMask.playError, errorCode);
-		}
-		
-		public function showAddBytesFace(need:Number, remind:Number, total:Number):void
-		{
-			var index:int;
-			if (remind <= 0)
-			{
-				//流量不足
-				_isNoEnoughBytes = true;
-				
-				//弹框时暂停
-				if (!_player.isStop)
-				{
-					_ctrBar.dispatchPause();
-				}
-				
-				if (!_noEnoughFace)
-				{
-					index = this.getChildIndex(_captionFace);
-					
-					_noEnoughFace = new NoEnoughBytesFace();
-					_noEnoughFace.addEventListener("CloseNoEnoughFace", onCloseNoEnoughFace);
-					addChildAt(_noEnoughFace, index);
-					_noEnoughFace.setPosition();
-				}
-				return;
-			}
-			
-			/*
-			if (!_addBytesFace)
-			{
-				index = this.getChildIndex(_captionFace);
-				
-				var needStr:String = Tools.formatBytes(need);
-				var remindStr:String = Tools.formatBytes(remind);
-				var progress:Number = remind / total;
-				
-				_addBytesFace = new AddBytesFace();
-				_addBytesFace.setInfo(needStr, remindStr, progress);
-				_addBytesFace.addEventListener("CloseAddBytesFace", onCloseAddBytesFace);
-				addChildAt(_addBytesFace, index);
-				_addBytesFace.setPosition();
-			}
-			*/
-		}
-		
-		private function onCloseNoEnoughFace(evt:Event):void
-		{
-			if (_noEnoughFace)
-			{
-				removeChild(_noEnoughFace);
-				_noEnoughFace = null;
-			}
-			
-			_isStopNormal = false;
-			_isShowStopFace = false;
-			
-			_ctrBar.dispatchStop();
-			_videoMask.showErrorNotice(VideoMask.noEnoughBytes);
-		}
-		
-		private function onCloseAddBytesFace(evt:Event):void
-		{
-			if (!_player.isStop)
-			{
-				_ctrBar.dispatchPlay();
-			}
-			
-			if (_addBytesFace)
-			{
-				removeChild(_addBytesFace);
-				_addBytesFace = null;
-			}
 		}
 		
 		public function checkIsValid():void
@@ -782,11 +609,14 @@
 			}
 		}
 		
-		private function pauseForever(tips:String):void
-		{
-			//流量不足
-			_isNoEnoughBytes = true;
-			
+		protected function onCloseAddBytesFace():void{
+			if (!_player.isStop)
+			{
+				_ctrBar.dispatchPlay();
+			}
+		}
+
+		protected function pauseForever(tips:String):void{
 			//暂停
 			if (!_player.isStop)
 			{
@@ -798,259 +628,40 @@
 		}
 		
 		//试播结束
-		public function tryPlayEnded(time:Number):void
+		protected function tryPlayEnded(time:Number):void
 		{
-			if (!_isPauseForever)
+			JTracer.sendMessage("PlayerCtrl -> tryPlayEnded, pauseForever");
+				
+			var userType:Number = Number(Tools.getUserInfo("userType"));
+			var playtype:String;
+			if (userType == 0 || userType == 1 || userType == 5)
 			{
-				_isPauseForever = true;
-				
-				JTracer.sendMessage("PlayerCtrl -> tryPlayEnded, pauseForever");
-				
-				var userType:Number = Number(Tools.getUserInfo("userType"));
-				var playtype:String;
-				if (userType == 0 || userType == 1 || userType == 5)
-				{
-					//正常播放
-					playtype = "0";
-				}
-				else
-				{
-					//时长卡播放
-					playtype = "2";
-				}
-				Tools.stat("f=show_play_end&playtype=" + playtype);
-				
-				pauseForever("");
-				_noticeBar.hideNoticeBar();
-				
-				//显示结束界面
-				showTryEndFace(time);
+				//正常播放
+				playtype = "0";
 			}
+			else
+			{
+				//时长卡播放
+				playtype = "2";
+			}
+			Tools.stat("f=show_play_end&playtype=" + playtype);
+			_noticeBar.hideNoticeBar();
 		}
 		
-		private function tryPlayEventHandler(evt:TryPlayEvent):void
+		protected function tryPlayEventHandler(evt:TryPlayEvent):void
 		{
 			switch(evt.type)
 			{
-				case TryPlayEvent.BuyVIP:
-					buyVIP(evt.info);
-					break;
-				case TryPlayEvent.BuyTime:
-					buyTime(evt.info);
-					break;
-				case TryPlayEvent.GoHome:
-					gotoHome();
-					break;
-				case TryPlayEvent.HidePanel:
-					hideTryPanel();
-					break;
 				case TryPlayEvent.DontNoticeBytes:
 					dontNoticeBytes();
 					break;
-				case TryPlayEvent.GetBytes:
-					getBytes();
-					break;
 			}
 		}
-		
-		private function hideTryPanel():void
-		{
-			hideTryEndFace();
-		}
-		
-		private function loadPanel(comFunc:Function):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> loadPanel, panel loading");
-			
-			_completeFunc = comFunc;
-			
-			if (!_isPanelLoaded)
-			{
-				if (_panelLoader)
-				{
-					try
-					{
-						_panelLoader.unloadAndStop();
-					}
-					catch(e:Error)
-					{
-						
-					}
-					_panelLoader.contentLoaderInfo.removeEventListener(Event.COMPLETE, onPanelLoaded);
-					_panelLoader.contentLoaderInfo.removeEventListener(IOErrorEvent.IO_ERROR, onPanelIOError);
-					_panelLoader.contentLoaderInfo.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, onPanelSecurityError);
-					_panelLoader = null;
-				}
-				
-				var url:String = this.loaderInfo.url;
-				var prefixURL:String = url.substr(0, url.lastIndexOf("/") + 1);
-				var req:URLRequest = new URLRequest(prefixURL + "tryPanel.swf?t=" + new Date().time);
-				
-				var context:LoaderContext = new LoaderContext();
-				context.applicationDomain = ApplicationDomain.currentDomain;
-				
-				_panelLoader = new Loader();
-				_panelLoader.contentLoaderInfo.addEventListener(Event.COMPLETE, onPanelLoaded);
-				_panelLoader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onPanelIOError);
-				_panelLoader.contentLoaderInfo.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onPanelSecurityError);
-				_panelLoader.load(req, context);
-			}
-			else
-			{
-				if (_completeFunc != null)
-				{
-					_completeFunc();
-				}
-			}
-		}
-		
-		private function onPanelLoaded(evt:Event):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> onPanelLoaded, panel loaded");
-			
-			_isPanelLoaded = true;
-			
-			if (_completeFunc != null)
-			{
-				_completeFunc();
-			}
-		}
-		
-		private function onPanelIOError(evt:IOErrorEvent):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> onPanelIOError, panel io error");
-			
-			_isPanelLoaded = false;
-		}
-		
-		private function onPanelSecurityError(evt:SecurityErrorEvent):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> onPanelSecurityError, panel security error");
-			
-			_isPanelLoaded = false;
-		}
-		
-		private function getPanelClass(className:String):Class
-		{
-			var cls:Class = _panelLoader.contentLoaderInfo.applicationDomain.getDefinition(className) as Class;
-			return cls;
-		}
-		
-		private function showTryEndFace(time:Number):void
-		{
-			var comFunc:Function = function():void
-			{
-				var tryEndCls:Class = getPanelClass("ctr.tryplay.TryEndFace");
-				
-				if (!_tryEndFace)
-				{
-					_tryEndFace = new tryEndCls();
-					_tryEndFace.setTime(time);
-					_tryEndFace.isTrial = false;
-					if(GlobalVars.instance.isZXThunder){
-						_tryEndFace.gotoAndStop(2);
-					}
-					addChild(_tryEndFace);
-					_tryEndFace.setPosition();
-				}
-			}
-			
-			loadPanel(comFunc);
-		}
-		
-		private function hideTryEndFace():void
-		{
-			if (_tryEndFace)
-			{
-				removeChild(_tryEndFace);
-				_tryEndFace = null;
-			}
-		}
-		
-		private function buyVIP(infoObj:Object):void
-		{
-			if (stage.displayState == StageDisplayState.FULL_SCREEN)
-			{
-				stage.displayState = StageDisplayState.NORMAL;
-			}
-			
-			var from:String = Tools.getUserInfo("from");
-			if (from && from.substr(0, 3).toLowerCase() == "un_")
-			{
-				Tools.windowOpen(GlobalVars.instance.url_buy_flow + "&referfrom=UN_014&ucid=" + from.substr(3) + "&paypos=" + infoObj.paypos, "_blank", "jump");
-				return;
-			}
-			
-			var stat:String = "";
-			if (infoObj.hasBytes)
-			{
-				stat = "HasFluxBuyVIP";
-			}
-			else
-			{
-				stat = "NoFluxBuyVIP";
-			}
-			
-			var paypos:String = infoObj.paypos ? '_' + infoObj.paypos : '';
-			if (GlobalVars.instance.platform == "client")
-			{
-				Tools.windowOpen(GlobalVars.instance.url_buy_flow + "&referfrom=" + infoObj.refer + paypos , "_blank", "jump");
-				Tools.stat("b=client" + stat);
-			}
-			else
-			{
-				Tools.windowOpen(GlobalVars.instance.url_buy_flow + "&referfrom=" + infoObj.refer + paypos);
-				Tools.stat("b=web" + stat);
-			}
-		}
-		
-		private function buyTime(infoObj:Object):void
-		{
-			if (stage.displayState == StageDisplayState.FULL_SCREEN)
-			{
-				stage.displayState = StageDisplayState.NORMAL;
-			}
-			
-			var from:String = Tools.getUserInfo("from");
-			if (from && from.substr(0, 3).toLowerCase() == "un_")
-			{
-				Tools.windowOpen(GlobalVars.instance.url_buy_time + "?referfrom=UN_014&ucid=" + from.substr(3) + "&paypos=" + infoObj.paypos, "_blank", "jump");
-				return;
-			}
-			
-			var stat:String = "NoTimeBuyVIP";
-			if (GlobalVars.instance.platform == "client")
-			{
-				Tools.windowOpen(GlobalVars.instance.url_buy_time + "?referfrom=" + infoObj.refer + "_" + infoObj.paypos, "_blank", "jump");
-				Tools.stat("b=client" + stat);
-			}
-			else
-			{
-				Tools.windowOpen(GlobalVars.instance.url_buy_time + "?referfrom=" + infoObj.refer + "_" + infoObj.paypos);
-				Tools.stat("b=web" + stat);
-			}
-		}
-		
-		private function gotoHome():void
-		{
-			if (stage.displayState == StageDisplayState.FULL_SCREEN)
-			{
-				stage.displayState = StageDisplayState.NORMAL;
-			}
-			
-			Tools.windowOpen(GlobalVars.instance.url_home, "_blank");
-		}
-		
-	
-		
-		private function initOther():void{
+
+		protected function initOther():void{
 			
 		}
-		private var _isXLNetStreamValid:Boolean = false;
-		private function initXLPlugins(flag:Boolean = false):void{
-			
-		}
-		
+
 		/**
 		 * 监听各个控制器及自身发出的信息、事件;
 		 */
@@ -1072,37 +683,35 @@
 			this.addEventListener(PlayEvent.INIT_STAGE_VIDEO, playEventHandler);
 			this.addEventListener(PlayEvent.INSTALL, playEventHandler);
 			this.addEventListener(PlayEvent.OPEN_WINDOW, playEventHandler);
+
 			this.addEventListener(SetQulityEvent.CHANGE_QUILTY,changeQualityHandler)
 			this.addEventListener(SetQulityEvent.INIT_QULITY, changeQualityHandler);
 			this.addEventListener(SetQulityEvent.LOWER_QULITY, changeQualityHandler);
 			this.addEventListener(SetQulityEvent.HAS_QULITY, changeQualityHandler);
 			this.addEventListener(SetQulityEvent.NO_QULITY, changeQualityHandler);
 			this.addEventListener(SetQulityEvent.PAUSE_FOR_QUALITY_TIP, changeQualityHandler);
+
 			this.addEventListener(EventSet.SKIP_MOVIE_HEAD, settingSpaceEventHandler);
 			this.addEventListener(EventSet.SHOW_AUTOQUALITY_FACE, settingSpaceEventHandler);
 			this.addEventListener(EventSet.SHOW_SKIPMOVIE_FACE, settingSpaceEventHandler);
 			this.addEventListener(EventSet.SHOW_STAGE_VIDEO, settingSpaceEventHandler);
+
 			stage.addEventListener(KeyboardEvent.KEY_DOWN, keyDownFunc);
 			stage.addEventListener(KeyboardEvent.KEY_UP, keyUpFunc);
+
 			stage.addEventListener(FullScreenEvent.FULL_SCREEN, on_stage_FULLSCREEN);
-			stage.addEventListener(MouseEvent.MOUSE_WHEEL , onMouseWheel);
-			this.addEventListener(EventSet.SHOW_FACE, showFaceHandler);
+
 			this.addEventListener(ControlEvent.SHOW_CTRBAR, controlEventHandler);
 			this.addEventListener(CaptionEvent.SET_STYLE, setCaptionStyle);
 			this.addEventListener(CaptionEvent.LOAD_CONTENT, loadCaptionContent);
 			this.addEventListener(CaptionEvent.HIDE_CAPTION, hideCaption);
 			this.addEventListener(CaptionEvent.SET_CONTENT, setCaptionContent);
-			this.addEventListener(CaptionEvent.APPLY_SUCCESS, applyCaptionSuccess);
 			this.addEventListener(CaptionEvent.APPLY_ERROR, applyCaptionError);
 			this.addEventListener(CaptionEvent.LOAD_STYLE, loadCaptionStyle);
 			this.addEventListener(CaptionEvent.LOAD_TIME, loadCaptionTime);
 			this.addEventListener(CaptionEvent.SET_TIME, setCaptionTime);
-			this.addEventListener(TryPlayEvent.BuyVIP, tryPlayEventHandler);
-			this.addEventListener(TryPlayEvent.BuyTime, tryPlayEventHandler);
-			this.addEventListener(TryPlayEvent.GoHome, tryPlayEventHandler);
-			this.addEventListener(TryPlayEvent.HidePanel, tryPlayEventHandler);
+
 			this.addEventListener(TryPlayEvent.DontNoticeBytes, tryPlayEventHandler);
-			this.addEventListener(TryPlayEvent.GetBytes, tryPlayEventHandler);
 		}
 
 		/**
@@ -1111,14 +720,6 @@
 		private function setCaptionStyle(evt:CaptionEvent):void
 		{
 			_subTitle.setStyle(evt.info);
-		}
-
-		/**
-		 * 显示播放中的提示
-		 */
-		private function showPlayingTips(evt:Event):void
-		{
-			showPlayerTxtTips("该视频正在播放", 2000);
 		}
 		
 		/**
@@ -1161,251 +762,6 @@
 			}
 		}
 		
-		/**
-		 * 显示设置面板
-		 */
-		public function showSetFace():void
-		{
-			if (_settingSpace.visible)
-			{
-				hideAllLayer();
-				
-				if (!_player.isStop)
-				{
-					_ctrBar.dispatchPlay();
-				}
-				
-				reportSetStat();
-			}
-			else
-			{
-				if (GlobalVars.instance.isStat)
-				{
-					Tools.stat("b=setPanel");
-				}
-				
-				hideAllLayer();
-				_settingSpace.showSetFace();
-				
-				if (!_player.isStop)
-				{
-					_ctrBar.dispatchPause();
-				}
-			}
-		}
-		
-		private function reportSetStat():void
-		{
-			if (!GlobalVars.instance.isStat)
-			{
-				return;
-			}
-			
-			//关闭面板后，如调节了默认清晰度，由上报
-			if (GlobalVars.instance.defaultFormatChanged)
-			{
-				GlobalVars.instance.defaultFormatChanged = false;
-				
-				Tools.stat("b=changeDefaultFormat");
-			}
-			
-			//关闭面板后，如调节了画画比例，则上报
-			if (GlobalVars.instance.ratioChanged)
-			{
-				GlobalVars.instance.ratioChanged = false;
-				
-				Tools.stat("b=changeRatio");
-			}
-			
-			//关闭面板后，如调节了色彩，则上报
-			if (GlobalVars.instance.colorChanged)
-			{
-				GlobalVars.instance.colorChanged = false;
-				
-				Tools.stat("b=changeColor");
-			}
-		}
-		
-		/**
-		 * 显示分享面板
-		 */
-		private function showShareFace():void
-		{
-			if (_shareFace.visible)
-			{
-				hideAllLayer();
-				
-				if (!_player.isStop)
-				{
-					_ctrBar.dispatchPlay();
-				}
-			}
-			else
-			{
-				if (GlobalVars.instance.isStat)
-				{
-					Tools.stat("b=sharePanel");
-				}
-				
-				hideAllLayer();
-				_shareFace.showFace(true);
-				
-				if (!_player.isStop)
-				{
-					_ctrBar.dispatchPause();
-				}
-			}
-		}
-		
-		/**
-		 * 显示字幕面板
-		 */
-		private function showCaptionFace(click:String = "tool"):void
-		{
-			if (_captionFace.visible)
-			{
-				hideAllLayer();
-				
-				if (!_player.isStop)
-				{
-					_ctrBar.dispatchPlay();
-				}
-				
-				reportCaptionStat();
-			}
-			else
-			{
-				Tools.stat("b=captionPanel&click=" + click);
-				
-				hideAllLayer();
-				_captionFace.showFace(true);
-				
-				if (!_player.isStop)
-				{
-					_ctrBar.dispatchPause();
-				}
-			}
-		}
-		
-		private function reportCaptionStat():void
-		{
-			//关闭面板后，如调节了字幕颜色，字幕大小等，保存字幕信息和上报
-			if (GlobalVars.instance.captionStyleChanged)
-			{
-				GlobalVars.instance.captionStyleChanged = false;
-				
-				if (GlobalVars.instance.isStat)
-				{
-					Tools.stat("b=changeSubtitle");
-				}
-				
-				_subTitle.saveStyle();
-			}
-			
-			//关闭面板后，如调节了时间轴，保存时间轴信息和上报
-			if (GlobalVars.instance.captionTimeChanged)
-			{
-				GlobalVars.instance.captionTimeChanged = false;
-				
-				if (GlobalVars.instance.isStat)
-				{
-					Tools.stat("b=changeSubtitleTime");
-				}
-				
-				_subTitle.saveTimeDelta();
-			}
-		}
-		
-		/**
-		 * 显示文件列表
-		 */
-		private function showFileListFace():void
-		{
-			if (_fileListFace.visible)
-			{
-				hideAllLayer();
-			}
-			else
-			{
-				if (GlobalVars.instance.isStat)
-				{
-					Tools.stat("b=filelistPanel");
-				}
-				
-				hideAllLayer();
-				_fileListFace.showFace(true);
-			}
-		}
-		
-		/**
-		 * 显示反馈面板
-		 */
-		private function showFeedbackFace(click:String = "tool"):void
-		{
-			if (_feedbackFace.visible)
-			{
-				hideAllLayer();
-				
-				if (!_player.isStop)
-				{
-					_ctrBar.dispatchPlay();
-				}
-			}
-			else
-			{
-				if (GlobalVars.instance.isStat)
-				{
-					Tools.stat("b=feedbackPanel&click=" + click);
-				}
-				
-				hideAllLayer();
-				_feedbackFace.showFace(true);
-				
-				if (!_player.isStop)
-				{
-					_ctrBar.dispatchPause();
-				}
-			}
-		}
-		
-		/**
-		 * 显示下载面板
-		 */
-		private function showDownloadFace():void
-		{
-			if (_downloadFace.visible)
-			{
-				hideAllLayer();
-				
-				if (!_player.isStop)
-				{
-					_ctrBar.dispatchPlay();
-				}
-			}
-			else
-			{
-				if (GlobalVars.instance.isStat)
-				{
-					Tools.stat("b=downloadPanel");
-				}
-				
-				hideAllLayer();
-				_downloadFace.showFace(true);
-				
-				if (!_player.isStop)
-				{
-					_ctrBar.dispatchPause();
-				}
-			}
-		}
-		
-		private function closeDownloadFace(evt:Event):void
-		{
-			_downloadFace.showFace(false);
-			
-			_ctrBar.dispatchPlay();
-		}
-
 		private function setCaptionContent(evt:CaptionEvent):void
 		{
 			_subTitle.setContent(evt.info.toString());
@@ -1431,26 +787,6 @@
 		private function hideCaption(evt:CaptionEvent):void
 		{
 			_subTitle.hideCaption(evt.info);
-		}
-		
-		private function applyCaptionSuccess(evt:CaptionEvent):void
-		{
-			_captionFace.showCompStatus();
-		}
-		
-		private function applyCaptionError(evt:CaptionEvent):void
-		{
-			_captionFace.showErrorStatus();
-		}
-		
-		private function loadCaptionStyle(evt:EventSet):void
-		{
-			_captionFace.loadCaptionStyle();
-		}
-		
-		private function loadCaptionTime(evt:CaptionEvent):void
-		{
-			_captionFace.loadCaptionTime(evt.info);
 		}
 		
 		private function setCaptionTime(evt:CaptionEvent):void
@@ -1495,68 +831,6 @@
 			Cookies.setCookie('isNoticeBytes', false);
 		}
 		
-		private function getBytes():void
-		{
-			if (stage.displayState == StageDisplayState.FULL_SCREEN)
-			{
-				stage.displayState = StageDisplayState.NORMAL;
-			}
-			//免费获得流量
-			if (GlobalVars.instance.platform == "client")
-			{
-				Tools.windowOpen(GlobalVars.instance.url_free_flow, "_blank", "jump");
-			}
-			else
-			{
-				Tools.windowOpen(GlobalVars.instance.url_free_flow);
-			}
-		}
-		
-		private function showFaceHandler(evt:EventSet):void
-		{
-			switch(evt.info) {
-				case 'set':
-					showSetFace();
-					break;
-				case 'share':
-					showShareFace();
-					break;
-				case 'caption':
-					showCaptionFace("tool");
-					break;
-				case 'captionFromTips':
-					showCaptionFace("tips");
-					break;
-				case 'filelist':
-					showFileListFace();
-					break;
-				case 'feedback':
-					showFeedbackFace("tool");
-					break;
-				case 'feedbackFromTips':
-					showFeedbackFace("tips");
-					break;
-				case 'download':
-					showDownloadFace();
-					//_player.saveFile();
-					break;
-			}
-		}
-		
-		private function settingSpaceEventHandler(e:EventSet):void
-		{
-			switch(e.type) {
-				case 'set_size':
-					var sizeInfo:Object = _settingSpace.videoSize;
-					if (sizeInfo['ratio'] != _setSizeInfo['ratio'] || sizeInfo['size'] != _setSizeInfo['size'] || true) {
-						_setSizeInfo['ratio'] = sizeInfo['ratio'];
-						_setSizeInfo['size'] = sizeInfo['size'];
-						updateVideoSizeFun();
-					}
-					break;
-			}
-		}
-		
 		private function changeQualityHandler(e:SetQulityEvent):void
 		{
 			switch(e.type) {
@@ -1594,7 +868,7 @@
 			e.stopPropagation();
 		}
 		
-		private function playEventHandler(e:PlayEvent):void
+		protected function playEventHandler(e:PlayEvent):void
 		{
 			if(e.type != 'Progress'){
 				JTracer.sendMessage('PlayerCtrl -> playEventHandler, PlayEvent.' + e.type);
@@ -1609,20 +883,8 @@
 					hideNoticeBar();
 					break;
 				case 'Pause':
-					//暂停时，显示上方地址输入栏
-					if (_toolTopFace.hidden)
-					{
-						_toolTopFace.show();
-					}
 					break;
 				case 'Play':
-					//播放时，隐藏上方地址输入栏
-					if (!_toolTopFace.hidden)
-					{
-						_toolTopFace.hide();
-					}
-					//隐藏面板
-					//hideAllLayer();
 					break;
 				case 'Seek':
 					var seekTime:Number = _player.onSeekTime;
@@ -1632,22 +894,14 @@
 					//_bufferTip.clearBreakCount();
 					break;
 				case 'Stop':
-					_settingSpace.visible = false;
-					_toolRightArrow.x = stage.stageWidth;
-					_toolRightArrow.hide(true);
-					_toolRightFace.x = stage.stageWidth;
-					_toolRightFace.hide(true);
-					_toolTopFace.y = -25;
-					_toolTopFace.hide(true);
-					_captionFace.showFace(false);
-					_fileListFace.showFace(false);
 					hideNoticeBar();
+
 					if (isChangeQuality == false) {
 						_ctrBar.onStop();
 						isFirstLoad = true;
 						_videoMask.bufferHandle('Stop');
 					}
-					//_bufferTip.clearBreakCount();
+					
 					_isBuffering = false;
 					_player.isBuffer = false;
 					//停止后，不处理为点击拖动条和使用按键进退产生的缓冲，使用bufferLength / bufferTime计算缓冲
@@ -1770,11 +1024,6 @@
 					
 					isFirstLoad = false;
 					isChangeQuality = false;
-					_toolRightArrow.hide(true);
-					_toolRightFace.hide(true);
-					_toolTopFace.hide(true);
-					//checkToolBarPosition();//检测工具条的位置
-					
 					_player.isBuffer = false;
 					_isBuffering = false;
 					break;
@@ -1904,130 +1153,11 @@
 			_time.start();
 		}
 		
-		private function onMouseWheel( event:MouseEvent ):void
+		protected function keyUpFunc(e:KeyboardEvent):void
 		{
-			//鼠标滚轮控制字幕时间轴调整
-			if (_captionFace.visible && _captionFace.isThumbIconActive)
-			{
-				if (event.delta > 0)
-				{
-					_captionFace.addDeltaByMouse(0.1);
-					
-					_curMouseDelta += event.delta;
-				}
-				else
-				{
-					_captionFace.subDeltaByMouse(0.1);
-					
-					_curMouseDelta -= event.delta;
-				}
-				
-				clearInterval(_timeIntervalID);
-				_timeIntervalID = setInterval(stopTimeMouseWheel, 2000);
-				return;
-			}
-			
-			//鼠标滚轮控制滤镜调整
-			if (_settingSpace.visible && _settingSpace.isThumbIconActive)
-			{
-				if (event.delta > 0)
-				{
-					_settingSpace.addDeltaByMouse(1);
-				}
-				else
-				{
-					_settingSpace.subDeltaByMouse(1);
-				}
-				
-				clearInterval(_filterIntervalID);
-				_filterIntervalID = setInterval(stopFilterMouseWheel, 2000);
-				return;
-			}
-			
-			if( _isFullScreen )
-			{
-				if( event.delta > 0 )
-					_ctrBar.handleVolumeFromKey( true );
-				else
-					_ctrBar.handleVolumeFromKey( false );
-			}
 		}
 		
-		/**
-		 * 3秒内无鼠标滚动，保存时间轴调整
-		 */
-		private function stopTimeMouseWheel():void
-		{
-			if (_lastMouseDelta != _curMouseDelta)
-			{
-				_lastMouseDelta = _curMouseDelta;
-				
-				//隐藏提示
-				Tools.hideToolTip();
-				_subTitle.saveTimeDelta();
-				
-				if (GlobalVars.instance.isStat)
-				{
-					Tools.stat("f=changeSubtitleTimeByMouse");
-				}
-			}
-		}
-		
-		/**
-		 * 3秒内无鼠标滚动，隐藏提示
-		 */
-		private function stopFilterMouseWheel():void
-		{
-			//隐藏提示
-			Tools.hideToolTip();
-		}
-		
-		private function keyUpFunc(e:KeyboardEvent):void
-		{
-			if(e.shiftKey && e.keyCode == 219)
-			{
-				//提前时间
-				trace("shift + [");
-				_captionFace.subTimeDeltaByKey(0.5);
-				
-				_curKeyDelta++;
-				clearInterval(_keyDeltaID);
-				_keyDeltaID = setInterval(stopKeyPress, 3000);
-			}
-			
-			if(e.shiftKey && e.keyCode == 221)
-			{
-				//推迟时间
-				trace("shift + ]");
-				_captionFace.addTimeDeltaByKey(0.5);
-				
-				_curKeyDelta--;
-				clearInterval(_keyDeltaID);
-				_keyDeltaID = setInterval(stopKeyPress, 3000);
-			}
-		}
-		
-		/**
-		 * 3秒内无键盘按下，保存时间轴调整
-		 */
-		private function stopKeyPress():void
-		{
-			if (_lastKeyDelta != _curKeyDelta)
-			{
-				_lastKeyDelta = _curKeyDelta;
-				
-				//隐藏提示
-				Tools.hideToolTip();
-				_subTitle.saveTimeDelta();
-				
-				if (GlobalVars.instance.isStat)
-				{
-					Tools.stat("f=changeSubtitleTimeByKey");
-				}
-			}
-		}
-		
-		private function keyDownFunc(event:KeyboardEvent):void
+		protected function keyDownFunc(event:KeyboardEvent):void
 		{
 			var seekTime:Number;
 			var idx:int;
@@ -2218,16 +1348,16 @@
 			_bufferTip.visible = false;
 		}
 		
-		private function handleMouseShow(e:Event):void
+		private function handleMouseInside(e:Event):void
 		{
-			showSide();
 			this.normalPlayProgressBar();
-		}
-		
-		private function handleMouseMove(e:Event):void
-		{
-			showSide();
-			this.normalPlayProgressBar();
+			//开播或正常停止不显示侧边栏
+			if (_player.isStartPause || _isStopNormal || _player.time <= 0)
+			{
+				return;
+			}
+			handleMouseShowAndMove();
+			
 		}
 		
 		private function handleMouseMoveOut(e:Event):void
@@ -2235,14 +1365,9 @@
 			
 		}
 		
-		private function handleMouseHide(e:Event):void
+		private function handleMouseOutSide(e:Event):void
 		{
-			hideSide();
-			
-			if (!_ctrBar.beMouseOnFormat)
-			{
-				_ctrBar.hideFormatSelector();
-			}
+			handleMouseHide();
 		}
 		
 		private function handleMouseHide2( e:Event ):void
@@ -2250,59 +1375,21 @@
 			this.smallPlayProgressBar();
 		}
 		
-		private function showSide():void
+		protected function handleMouseShowAndMove():void
 		{
-			//开播或正常停止不显示侧边栏
-			if (_player.isStartPause || _isStopNormal || _player.time <= 0)
-			{
-				return;
-			}
 			
 			if (_ctrBar._beFullscreen && _ctrBar.hidden)
 			{
 				_ctrBar.show();
 				_noticeBar.show();
 			}
-			
-			/*
-			if (_toolTopFace.hidden)
-			{
-				_toolTopFace.show();
-			}
-			*/
-			
-			if (this.mouseX > stage.stageWidth - 150)
-			{
-				if (_toolRightFace.hidden)
-				{
-					_toolRightFace.show();
-				}
-				if (_toolRightArrow.visible)
-				{
-					_toolRightArrow.visible = false;
-					_toolRightArrow.hide(true);
-				}
-			}
-			else
-			{
-				if (!_toolRightFace.hidden)
-				{
-					_toolRightFace.hide();
-				}
-				if (!_toolRightArrow.visible)
-				{
-					_toolRightArrow.visible = true;
-					_toolRightArrow.show();
-				}
-			}
-			if (_toolRightArrow.hidden)
-			{
-				_toolRightArrow.show();
-			}
 		}
-		
-		private function hideSide(type:Boolean = false):void
-		{
+		protected function handleMouseHide():void{
+			if (!_ctrBar.beMouseOnFormat)
+			{
+				_ctrBar.hideFormatSelector();
+			}
+
 			if (_player.isStartPause || _isStopNormal || _player.time <= 0)
 			{
 				return;
@@ -2317,45 +1404,8 @@
 			{
 				Mouse.show();
 			}
-			
-			/*
-			if (!_toolTopFace.hidden && !_toolTopFace.beMouseOn && !_player.isPause)
-			{
-				_toolTopFace.hide();
-			}
-			if (_toolTopFace.beMouseOn)
-			{
-				Mouse.show();
-			}
-			*/
-			
-			if (!_toolRightFace.hidden && !_toolRightFace.beMouseOn)
-			{
-				_toolRightFace.hide();
-			}
-			if (_toolRightFace.beMouseOn)
-			{
-				Mouse.show();
-			}
-			if (!_toolRightArrow.hidden)
-			{
-				_toolRightArrow.hide();
-			}
-			
-			//鼠标在设置面板，不隐藏鼠标
-			if (_settingSpace.beMouseOn)
-			{
-				Mouse.show();
-			}
 		}
-		
-		private function checkToolBarPosition():void
-		{
-			if (_toolRightFace.x < stage.stageWidth || (stage.displayState == StageDisplayState.FULL_SCREEN )) {
-				JTracer.sendLoaclMsg('_toolRightFace.x:' + _toolRightFace.x+',stage.stageWidth:'+stage.stageWidth);
-				hideSide(true);
-			}
-		}
+
 		private function normalPlayProgressBar():void
 		{
 			if( _ctrBar._barBg.height == this.SMALL_PROGRESSBAR_HEIGTH )
@@ -2425,7 +1475,7 @@
 			JTracer.sendMessage('_playerRealWidth:' + _playerRealWidth + ',_playerRealHeight:' + _playerRealHeight + ',_ratio:' + _ratio + ',_player.nomarl_width:' + _player.nomarl_width + ',_player.normal_height:' + _player.nomarl_height);
 		}
 		
-		private function updateVideoSizeFun():void
+		protected function updateVideoSizeFun():void
 		{
 			if (_setSizeInfo['size'] == '50'){
 				_playerSize = 2;
@@ -2449,7 +1499,7 @@
 			resizeTimer.start();
 		}
 		
-		public function changePlayerSize():void
+		protected function changePlayerSize():void
 		{
 			adaptRealSize();
 			var num:Number = 1;
@@ -2477,7 +1527,7 @@
 			JTracer.sendMessage('prWidth:' + rWidth + ',prHeight:' + rHeight + ',num:' + num + ',sWidth:' + stage.stageWidth + ',sHeight:' + stage.stageHeight + 'pWidth:' + _player.width + ',pHeight:' + _player.height);
 		}
 		
-		private function on_stage_FULLSCREEN(e:FullScreenEvent):void 
+		protected function on_stage_FULLSCREEN(e:FullScreenEvent):void 
 		{
 			JTracer.sendMessage('fullScreen=' + e.fullScreen + ',e.target='+e.currentTarget);
 			_ctrBar.fullscreen = e.fullScreen;

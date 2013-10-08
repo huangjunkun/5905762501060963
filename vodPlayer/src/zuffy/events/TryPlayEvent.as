@@ -18,7 +18,8 @@ package zuffy.events
 		public static const GetBytes:String = "get_bytes";			//获取免费流量
 		public static const DontNoticeBytes:String = "dont_notice_bytes";//不再提示流量
 		public static const BuyTime:String = "buy_time";			//购买时长
-		
+		public static const TRY_PLAY_ENDED_ADDBYTE:String = "try_play_ended_addbyte";// 试播结束
+
 		private var _info:Object;
 		
 		public function TryPlayEvent(type:String, info:Object = null) 
