@@ -93,6 +93,7 @@
 		private var _hideRightTimer:Timer;
 		private var _isInitialize:Boolean = false;
 		private var _mouseControl:MouseControl;
+		private var _movieType:String;
 		private var _playerSize:int = 0;//0全屏；1中屏；2小屏
 		private var _playerRealWidth:Number;
 		private var _playerRealHeight:Number;
@@ -186,7 +187,8 @@
 		}
 
 		protected function initGlobalData(tParams:Object):void{
-			GlobalVars.instance.movieType = tParams['movieType'] ? tParams['movieType'] : 'movie';
+			_movieType = tParams['movieType'] ? tParams['movieType'] : 'movie';
+			GlobalVars.instance.movieType = _movieType;
 			GlobalVars.instance.windowMode = tParams['windowMode'] || 'browser';
 			GlobalVars.instance.platform = tParams['platform'] || 'webpage';
 			GlobalVars.instance.isMacWebPage = ((typeof tParams['isMacWebPage'] != "undefined") && tParams['isMacWebPage'] != 'false');
@@ -215,9 +217,6 @@
 			
 			initStageEvent();
 
-			initXLPlugins(GlobalVars.instance.isMacWebPage);
-
-
 			_checkUserLoader = new URLLoader();
 			_checkUserLoader.addEventListener(Event.COMPLETE, onCheckUserComplete);
 			_checkUserLoader.addEventListener(IOErrorEvent.IO_ERROR, onCheckUserIOError);
@@ -234,20 +233,20 @@
 			
 			var _has_fullscreen:int = int(_params["fullscreenbtn"]) || 1;
 
-			_player = new Player(_w, _h - 35, _has_fullscreen, this);
+			_player = new Player(tWidth, tHeight - 35, _has_fullscreen, this);
 			_player.name="_player";
 			_player.addEventListener(Player.SET_QUALITY, handleSetQuality);
 			_player.addEventListener(Player.AUTO_PLAY, handleAutoPlay);
 			_player.addEventListener(Player.INIT_PAUSE, handleInitPause);
 			this.addChild(_player);
 
-			_subTitle = new Subtitle(this, _player, _w, _h);
+			_subTitle = new Subtitle(this, tWidth, tHeight);
 			_subTitle.handleStageResize(stage.stageWidth, stage.stageHeight);
 			
 			_screenEvent = new Sprite();
 			_screenEvent.graphics.clear();
 			_screenEvent.graphics.beginFill(0xffffff, 0);
-			_screenEvent.graphics.drawRect(0, 0, _w, _h);
+			_screenEvent.graphics.drawRect(0, 0, tWidth, tHeight);
 			_screenEvent.graphics.endFill();
 			_screenEvent.doubleClickEnabled = true;
 			_screenEvent.mouseEnabled = true;
@@ -261,7 +260,7 @@
 			this.addChild(_videoMask);
 			_videoMask.setPosition();
 			
-			_ctrBar = new CtrBar(_w,_h,_has_fullscreen, this);
+			_ctrBar = new CtrBar(tWidth,tHeight,_has_fullscreen, this);
 			this.addChild(_ctrBar);
 			_ctrBar.showPlayOrPauseButton='PLAY';
 			_ctrBar.flvPlayer=_player;
@@ -299,17 +298,6 @@
 			changePlayerSize();
 
 			_subTitle.handleStageResize(stage.stageWidth, stage.stageHeight, _isFullScreen);
-		}
-
-		//显示系统时间
-		public function setSystemTime():void
-		{
-			var date:Date = new Date();
-			var hours:Number = date.getHours();
-			var minutes:Number = date.getMinutes();
-			var hoursStr:String = hours >= 10 ? hours.toString() : "0" + hours.toString();
-			var minutesStr:String = minutes >= 10 ? minutes.toString() : "0" + minutes.toString();
-			_toolTopFace.setSystemTime(hoursStr + ":" + minutesStr);
 		}
 		
 		//切换视频
@@ -647,7 +635,12 @@
 			Tools.stat("f=show_play_end&playtype=" + playtype);
 			_noticeBar.hideNoticeBar();
 		}
-		
+		private function onFeeSuccessHandler(evt:TryPlayEvent):void{
+			var info:Object = evt.info;
+			var _remainTimes = info.remainTimes;
+			tryPlayEnded(_remainTimes);
+			isNoEnoughBytes = true;
+		}
 		protected function tryPlayEventHandler(evt:TryPlayEvent):void
 		{
 			switch(evt.type)
@@ -691,11 +684,6 @@
 			this.addEventListener(SetQulityEvent.NO_QULITY, changeQualityHandler);
 			this.addEventListener(SetQulityEvent.PAUSE_FOR_QUALITY_TIP, changeQualityHandler);
 
-			this.addEventListener(EventSet.SKIP_MOVIE_HEAD, settingSpaceEventHandler);
-			this.addEventListener(EventSet.SHOW_AUTOQUALITY_FACE, settingSpaceEventHandler);
-			this.addEventListener(EventSet.SHOW_SKIPMOVIE_FACE, settingSpaceEventHandler);
-			this.addEventListener(EventSet.SHOW_STAGE_VIDEO, settingSpaceEventHandler);
-
 			stage.addEventListener(KeyboardEvent.KEY_DOWN, keyDownFunc);
 			stage.addEventListener(KeyboardEvent.KEY_UP, keyUpFunc);
 
@@ -706,12 +694,10 @@
 			this.addEventListener(CaptionEvent.LOAD_CONTENT, loadCaptionContent);
 			this.addEventListener(CaptionEvent.HIDE_CAPTION, hideCaption);
 			this.addEventListener(CaptionEvent.SET_CONTENT, setCaptionContent);
-			this.addEventListener(CaptionEvent.APPLY_ERROR, applyCaptionError);
-			this.addEventListener(CaptionEvent.LOAD_STYLE, loadCaptionStyle);
-			this.addEventListener(CaptionEvent.LOAD_TIME, loadCaptionTime);
 			this.addEventListener(CaptionEvent.SET_TIME, setCaptionTime);
 
 			this.addEventListener(TryPlayEvent.DontNoticeBytes, tryPlayEventHandler);
+			this.addEventListener(TryPlayEvent.FEE_SUCCESS, onFeeSuccessHandler)
 		}
 
 		/**
@@ -1527,41 +1513,31 @@
 			JTracer.sendMessage('prWidth:' + rWidth + ',prHeight:' + rHeight + ',num:' + num + ',sWidth:' + stage.stageWidth + ',sHeight:' + stage.stageHeight + 'pWidth:' + _player.width + ',pHeight:' + _player.height);
 		}
 		
-		protected function on_stage_FULLSCREEN(e:FullScreenEvent):void 
+		private function on_stage_FULLSCREEN(e:FullScreenEvent):void 
 		{
 			JTracer.sendMessage('fullScreen=' + e.fullScreen + ',e.target='+e.currentTarget);
 			_ctrBar.fullscreen = e.fullScreen;
 			_ctrBar.show(true);
 			_noticeBar.show(true);
 			_mouseControl.fullscreen = e.fullScreen;
-			_toolRightFace.hide(true);
-			_toolTopFace.hide(true);
-			//未开播时不显示
-			if (_player.time > 0)
-			{
-				_toolRightArrow.show(true);
-			}
-			else
-			{
-				_toolRightArrow.hide(true);
-			}
+			addJustStageFullScreen(_player, e.fullscreen);
 			_videoMask.setPosition();
-			if (e.fullScreen) {
+		}
+
+		protected function addJustStageFullScreen(player:Player, isFullScreen:Boolean):void{
+			if (isFullScreen) {
 				ExternalInterface.call("flv_playerEvent","onFullScreen");
 				_isFullScreen = true;
 				changePlayerSize();
 				_playFullWidth = _player.width;
 				_playFullHeight = _player.height;
 				_ctrBar.y = stage.stageHeight - 33;
-				_toolTopFace.fullScreen();
 			}else {
 				ExternalInterface.call("flv_playerEvent", "onExitFullScreen");
 				//_playerSize = 0;
 				_toolTopFace.normalScreen();
 				_isFullScreen = false;
-				{
-					changePlayerSize();
-				}
+				changePlayerSize();
 			}
 		}
 		
@@ -2426,34 +2402,6 @@
 			if (!_toolRightArrow.hidden)
 			{
 				_toolRightArrow.hide();
-			}
-		}
-		
-		protected function hideAllLayer():void
-		{
-			if (_settingSpace.visible) {
-				_settingSpace.showSetFace();
-				reportSetStat();
-			}
-			if (_captionFace.visible)
-			{
-				_captionFace.showFace(false);
-			}
-			if (_fileListFace.visible)
-			{
-				_fileListFace.showFace(false);
-			}
-			if (_shareFace)
-			{
-				_shareFace.showFace(false);
-			}
-			if (_feedbackFace)
-			{
-				_feedbackFace.showFace(false);
-			}
-			if (_downloadFace.visible)
-			{
-				_downloadFace.showFace(false);
 			}
 		}
 		

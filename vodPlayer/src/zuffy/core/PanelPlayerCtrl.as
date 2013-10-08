@@ -77,9 +77,7 @@
 		override function initializeUI(tWidth:int, tHeight:int):void{
 			super();
 			_settingSpace = new SettingSpace(_player);
-			_settingSpace.addEventListener(EventSet.SET_AUTOCHANGE, settingSpaceEventHandler);
 			_settingSpace.addEventListener(EventSet.SET_SIZE, settingSpaceEventHandler);
-			_settingSpace.addEventListener(EventSet.SET_CHANGED, settingSpaceEventHandler);
 			addChild(_settingSpace);
 			_settingSpace.setPosition();
 			
@@ -118,7 +116,16 @@
 			//使tooltip显示在最上层
 			Tools.registerToolTip(this);
 		}
-		
+		//显示系统时间
+		public function setSystemTime():void
+		{
+			var date:Date = new Date();
+			var hours:Number = date.getHours();
+			var minutes:Number = date.getMinutes();
+			var hoursStr:String = hours >= 10 ? hours.toString() : "0" + hours.toString();
+			var minutesStr:String = minutes >= 10 ? minutes.toString() : "0" + minutes.toString();
+			_toolTopFace.setSystemTime(hoursStr + ":" + minutesStr);
+		}
 		private function settingSpaceEventHandler(e:EventSet):void
 		{
 			switch(e.type) {
@@ -1063,13 +1070,8 @@
 			}
 		}
 		
-		override function on_stage_FULLSCREEN(e:FullScreenEvent):void 
-		{
-			JTracer.sendMessage('fullScreen=' + e.fullScreen + ',e.target='+e.currentTarget);
-			_ctrBar.fullscreen = e.fullScreen;
-			_ctrBar.show(true);
-			_noticeBar.show(true);
-			_mouseControl.fullscreen = e.fullScreen;
+		protected function addJustStageFullScreen(player:Player, isFullScreen:Boolean):void{
+			super(player,isFullScreen);
 			_toolRightFace.hide(true);
 			_toolTopFace.hide(true);
 			//未开播时不显示
@@ -1081,8 +1083,7 @@
 			{
 				_toolRightArrow.hide(true);
 			}
-			_videoMask.setPosition();
-			if (e.fullScreen) {
+			if (isFullScreen) {
 				_toolTopFace.fullScreen();
 			}else {
 				_toolTopFace.normalScreen();

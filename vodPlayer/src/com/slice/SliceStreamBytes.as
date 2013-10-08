@@ -1,26 +1,29 @@
 ﻿package  com.slice
 {
+	import com.Player;
 	import com.common.GetNextVodSocket;
-	import flash.external.ExternalInterface;
-	import flash.net.URLRequest;
-	import flash.system.System;
-	import flash.utils.ByteArray;
-	import flash.utils.getTimer;
-	import flash.utils.Timer;
-	import flash.net.NetStream;
-	import flash.net.NetConnection;
-	import flash.media.Video;
-	import flash.media.SoundTransform;
-	import flash.events.Event;
-	import flash.events.TimerEvent;
-	import flash.events.AsyncErrorEvent;
-	import flash.events.NetStatusEvent;
 	import com.common.JTracer;
 	import com.common.Tools;
 	import com.global.GlobalVars;
-	import com.Player;
-	import flash.net.sendToURL;
+	
+	import flash.events.AsyncErrorEvent;
+	import flash.events.Event;
+	import flash.events.NetStatusEvent;
+	import flash.events.TimerEvent;
+	import flash.external.ExternalInterface;
+	import flash.media.SoundTransform;
+	import flash.media.Video;
+	import flash.net.NetConnection;
+	import flash.net.NetStream;
 	import flash.net.NetStreamAppendBytesAction;
+	import flash.net.URLRequest;
+	import flash.net.sendToURL;
+	import flash.system.System;
+	import flash.utils.ByteArray;
+	import flash.utils.Timer;
+	import flash.utils.getTimer;
+	
+	import zuffy.events.TryPlayEvent;
 	
 	/**
 	 * p2s多段拼接
@@ -264,9 +267,9 @@
 						if (Tools.getUserInfo("from") != _globalVars.fromXLPan)
 						{
 							//_player.main_mc.showAddBytesFace(0, 0, 0);
-							_player.main_mc.tryPlayEnded(_remainTimes);
-							_player.main_mc.isNoEnoughBytes = true;
-							
+							var info:Object = {remainTimes:_remainTimes};
+							var evt:TryPlayEvent = new TryPlayEvent(TryPlayEvent.FEE_SUCCESS,info);
+							_player.dispatchEvent(evt);
 							//暂停
 							if (!_player.isStop)
 							{
