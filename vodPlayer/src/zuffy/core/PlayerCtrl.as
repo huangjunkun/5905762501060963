@@ -128,7 +128,6 @@
 		private var _isNoEnoughBytes:Boolean;				//是否流量不足
 		private var _videoUrlArray:Array;
 		private var _isFirstTips:Boolean = true;			//是否第一次提示上次播放时间点或字幕提示
-		private var _isFirstListTips:Boolean = true;		//是否第一次提示文件列表
 		private var _isFirstRemainTips:Boolean = true;		//是否第一次提示时长
 		private var _isStopNormal:Boolean;					//是否正常停止
 		private var _isFirstOnplaying:Boolean = true;		//是否第一次触发onplaying
@@ -206,9 +205,6 @@
 			// 初始化基本界面
 			initializeUI(_w, _h);
 			
-			// 调整UI顺序
-			setObjectLayer();
-
 			// 与js通信接口
 			initJsInterface();
 
@@ -562,15 +558,6 @@
 					{
 						//无时长普通会员开播1秒后停止
 						setTimeout(tryPlayEnded, 1000, 0);
-						
-						/*
-						if (!_isPauseForever)
-						{
-							_isPauseForever = true;
-							
-							setTimeout(pauseForever, 1000, "您的可播放时长剩余0，迅雷白金会员不限时长，<a href='event:buyVIP11'>立即开通</a>");
-						}
-						*/
 					}
 					else
 					{
@@ -898,7 +885,6 @@
 					_noticeBar.show(true);
 					//停止后，第一次提示重置为true
 					_isFirstTips = true;
-					_isFirstListTips = true;
 					_isFirstRemainTips = true;
 					_isPlayStart = false;
 					break;
@@ -935,24 +921,7 @@
 					
 					//检测是否应该暂停影片播放
 					checkIsShouldPause();
-					
-					//文件列表提示
-					if (_isFirstListTips)
-					{
-						_isFirstListTips = false;
-						
-						//切换清晰度时不提示
-						if (!isChangeQuality)
-						{
-							//显示文件列表提示
-							var isNoticeList:* = Cookies.getCookie('isNoticeList');
-							if (Tools.getUserInfo("urlType") != "url" && _fileListFace.filelistLength > 1 && isNoticeList !== false)
-							{
-								_ctrBar.showFilelistTips(_fileListFace.filelistLength);
-							}
-						}
-					}
-					
+										
 					//开播时上次播放时间点和字幕提示
 					if (_isFirstTips)
 					{
@@ -1520,7 +1489,7 @@
 			_ctrBar.show(true);
 			_noticeBar.show(true);
 			_mouseControl.fullscreen = e.fullScreen;
-			addJustStageFullScreen(_player, e.fullscreen);
+			addJustStageFullScreen(_player, e.fullScreen);
 			_videoMask.setPosition();
 		}
 
@@ -1535,7 +1504,6 @@
 			}else {
 				ExternalInterface.call("flv_playerEvent", "onExitFullScreen");
 				//_playerSize = 0;
-				_toolTopFace.normalScreen();
 				_isFullScreen = false;
 				changePlayerSize();
 			}
@@ -1683,7 +1651,6 @@
 			GlobalVars.instance.linkNum = arr[0].urls ? arr[0].urls.length : 0;
 			_player.originGdlUrl = arr[0].url;
 			
-			_isPauseForever = false;
 			_isPlayStart = false;
 			_isFlowChecked = false;
 			
@@ -1731,39 +1698,13 @@
 			_player.hasNextStream = true;
 			Tools.getFormat();
 
-			var isUseP2P:Boolean =  checkIsUseP2P(arr[0].url);		
+			var isUseP2P:Boolean =  false;		
 
 			JTracer.sendMessage('is ios page :' + GlobalVars.instance.isMacWebPage)
 			if(Player.p2p_type == 'p2s' || GlobalVars.instance.isMacWebPage || !isUseP2P){
 				GlobalVars.instance.isXLNetStreamValid = 0;
 				_player.setPlayUrl(arr);
 				return;
-			}
-
-			// 未初始化的情况
-			if(!isXLNetStreamAfterInited){
-
-				JTracer.sendMessage("PlayerCtrl -> setPlayUrl in p2p");
-				if(_isXLNetStreamValid){
-					JTracer.sendMessage('play other in p2p')
-					GlobalVars.instance.isXLNetStreamValid = 1;
-					_player.setPlayUrl(arr);
-				}else{
-					xlPluginCallBackArgs = arr;
-					execFuncWhenXLPluginInit();
-				}
-
-			}else{
-
-				JTracer.sendMessage('b:'+_isXLNetStreamValid + ' c:'+isUseP2P)
-				// 点播另一个视频
-				if(_isXLNetStreamValid && isUseP2P){
-					JTracer.sendMessage('play other in p2p')
-					GlobalVars.instance.isXLNetStreamValid = 1;
-				}else{
-					GlobalVars.instance.isXLNetStreamValid = 0;
-				}
-				_player.setPlayUrl(arr);
 			}
 			
 		}
@@ -2022,14 +1963,12 @@
 				ExternalInterface.addCallback('flv_setBarAvailable', flv_setBarAvailable);
 				ExternalInterface.addCallback('flv_setIsShowNoticeClose', flv_setIsShowNoticeClose);
 				ExternalInterface.addCallback('flv_getFlashVersion', flv_getFlashVersion);
-				ExternalInterface.addCallback('flv_setCaptionParam', flv_setCaptionParam);
 				ExternalInterface.addCallback('flv_getTimePlayed', flv_getTimePlayed);
 				ExternalInterface.addCallback('flv_setFeeParam', flv_setFeeParam);
 				ExternalInterface.addCallback('flv_playOtherFail', flv_playOtherFail);
 				ExternalInterface.addCallback('flv_setShareLink', flv_setShareLink);
 				ExternalInterface.addCallback('flv_showBarNotice', flv_showBarNotice);
 				ExternalInterface.addCallback('flv_setToolBarEnable', flv_setToolBarEnable);
-				ExternalInterface.addCallback('flv_showFeedbackFace', flv_showFeedbackFace);
 				ExternalInterface.addCallback('flv_ready', flv_ready);
 			}
 		}
@@ -2049,16 +1988,7 @@
 			
 			return defaultFormat;
 		}
-		
-		public function flv_showFeedbackFace():void
-		{
-			var urlStr:String = "PlayerCtrl -> js回调flv_showFeedbackFace, 显示问题反馈面板";
-			JTracer.sendMessage(urlStr);
-			
-			_feedbackFace.visible = false;
-			showFeedbackFace("webpage");
-		}
-		
+				
 		public function flv_showErrorInfo():void
 		{
 			var urlStr:String = "PlayerCtrl -> js回调flv_showErrorInfo, 显示204后三次重试失败界面";
@@ -2133,44 +2063,6 @@
 		 */
 		public function flv_setFeeParam(obj:Object):void
 		{
-			var urlStr:String = "PlayerCtrl -> js回调flv_setFeeParam, 设置扣费参数:";
-			for (var i:* in obj)
-			{
-				urlStr += "\n" + "obj." + i + ":" + obj[i];
-			}
-			JTracer.sendMessage(urlStr);
-			
-			_toolTopFace.infoObj = obj;
-			GlobalVars.instance.curFileInfo = obj;
-			if (obj.url.indexOf("bt://") == 0)
-			{
-				Tools.setUserInfo("urlType", "bt");
-			}
-			else if (obj.url.indexOf("magnet:?") == 0)
-			{
-				Tools.setUserInfo("urlType", "magnet");
-				
-				var info_hash_url:String = obj.url.substr(obj.url.indexOf("xt=urn:btih:"));
-				var params_arr:Array = info_hash_url.split("&");
-				var info_hash_arr:Array = params_arr[0].toString().split(":");
-				Tools.setUserInfo("info_hash", info_hash_arr[info_hash_arr.length - 1].toUpperCase());
-			}
-			else
-			{
-				Tools.setUserInfo("urlType", "url");
-			}
-			
-			if (!_isReported)
-			{
-				_isReported = true;
-				
-				//flash引用页地址
-				var quoteURL:String = ExternalInterface.call("function(){return document.location.href;}");
-				Tools.stat("f=quoteURL&url=" + quoteURL);
-			}
-			
-			//字幕
-			GlobalVars.instance.hasSubtitle = Number(obj.subtitle) == 1 ? true : false;
 			//没有内嵌字幕时，底部显示字幕按钮
 			if (_ctrBar)
 			{
@@ -2182,23 +2074,6 @@
 				{
 					_ctrBar.hideCaptionBtn();
 				}
-			}
-			//设置字幕列表为未加载状态
-			GlobalVars.instance.isCaptionListLoaded = false;
-			//设置字幕样式为未加载状态
-			GlobalVars.instance.isCaptionStyleLoaded = false;
-			//设置没有自动加载的字幕
-			GlobalVars.instance.isHasAutoloadCaption = false;
-			//加载上次加载的字幕
-			_captionFace.loadLastload();
-			
-			
-			//加载文件列表
-			if (_fileListFace)
-			{
-				_fileListFace.resetReqOffset();
-				_fileListFace.resetListArray();
-				_fileListFace.loadFileList();
 			}
 		}
 		
@@ -2213,50 +2088,12 @@
 		
 		public function flv_setToolBarEnable(obj:Object):void
 		{
-			var urlStr:String = "PlayerCtrl -> js回调flv_setToolBarEnable, 设置工具栏按钮是否可点:";
-			for (var i:* in obj)
-			{
-				urlStr += "\n" + "obj." + i + ":" + obj[i];
-			}
-			JTracer.sendMessage(urlStr);
-			
-			GlobalVars.instance.enableShare = obj.enableShare;
-			if (_toolRightFace)
-			{
-				_toolRightFace.enableObj = obj;
-			}
 			if (_ctrBar)
 			{
 				_ctrBar.enableFileList = obj.enableFileList || false;
 			}
-			if (_toolTopFace)
-			{
-				_toolTopFace.visible = obj.enableTopBar;
-			}
 		}
-		
-		/**
-		 * 设置字幕上传参数
-		 * @param	obj		字幕上传参数
-		 * 
-		 * obj.extension:*.srt;*.ass
-		 * obj.limitSize:5242880	上限大小，单位字节
-		 * obj.description:请选择字幕文件(*.srt、*.ass)
-		 * obj.timeOut		超时时间
-		 * obj.uploadURL	上传地址
-		 */
-		public function flv_setCaptionParam(obj:Object):void
-		{
-			var urlStr:String = "PlayerCtrl -> js回调flv_setCaptionParam, 设置字幕上传参数:";
-			for (var i:* in obj)
-			{
-				urlStr += "\n" + "obj." + i + ":" + obj[i];
-			}
-			JTracer.sendMessage(urlStr);
-			
-			_captionFace.setOuterParam(obj);
-		}
-		
+				
 		public function flv_getFlashVersion():String
 		{
 			var ver:String = Capabilities.version;
@@ -2384,41 +2221,15 @@
 			return bn;
 		}
 		
-		private function hideSideChangeQuilty():void
+		protected function hideSideChangeQuilty():void
 		{
 			if (_ctrBar._beFullscreen)
 			{
 				_ctrBar.hide();
 				_noticeBar.hide();
 			}
-			if (!_toolTopFace.hidden)
-			{
-				_toolTopFace.hide();
-			}
-			if (!_toolRightFace.hidden)
-			{
-				_toolRightFace.hide();
-			}
-			if (!_toolRightArrow.hidden)
-			{
-				_toolRightArrow.hide();
-			}
 		}
-		
-		protected function setObjectLayer():void
-		{
-			var layerIndexArr:Array = [];
-			layerIndexArr.push(getChildIndex(_settingSpace));
-			layerIndexArr.push(getChildIndex(_ctrBar));
-			layerIndexArr.sort(orderArrFun);
-			if (getChildIndex(_ctrBar) != layerIndexArr[0]) {
-				setChildIndex(_ctrBar, layerIndexArr[0]);
-			}
-			if (getChildIndex(_settingSpace) != layerIndexArr[1]) {
-				setChildIndex(_settingSpace, layerIndexArr[1]);
-			}
-		}
-		
+				
 		private function orderArrFun(a:Number, b:Number):int
 		{
 			if (a > b) {
@@ -2463,13 +2274,8 @@
 		
 		public function flv_showFormats(formats:Object):void
 		{
-			var urlStr:String = "PlayerCtrl -> js回调flv_showFormats, 设置formats:";
-			urlStr += "\n" + com.serialization.json.JSON.serialize(formats);
-			JTracer.sendMessage(urlStr);
-			
 			_formatsObj = formats;
 			_ctrBar.showFormatLayer(formats);
-			_downloadFace.setDownloadFormat(formats);
 		}
 		
 		public function flv_seek(time:Number = 0):void
@@ -2545,14 +2351,19 @@
 		{
 			_isShowStopFace = boo;
 		}
-		
+
+		// 播放下一集视频
+		public function playNext():void
+		{
+			return;
+		}
+
 		//是否有下一集
 		public function get isHasNext():Boolean
 		{
-			var _isHasNext:Boolean = _fileListFace.isHasNext;
-			return _isHasNext;
+			return false;
 		}
-		
+
 		//i帧截图图片数据
 		public function get snptBmdArray():Array
 		{
