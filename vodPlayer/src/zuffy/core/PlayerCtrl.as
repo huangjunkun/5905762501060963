@@ -6,8 +6,6 @@
 	import com.common.JTracer;
 	import com.slice.StreamList;
 	import com.global.GlobalVars;
-	import com.common.StringUtil;
-	import com.greensock.TweenLite;
 	import com.serialization.json.JSON;
 
 	import zuffy.display.CtrBar;
@@ -26,7 +24,6 @@
 	import flash.display.Bitmap;
 	import flash.display.BitmapData;
 	import flash.display.Loader;
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.display.StageAlign;
 	import flash.display.StageDisplayState;
@@ -43,10 +40,6 @@
 	import flash.filters.GlowFilter;
 	import flash.net.URLLoader;
 	import flash.net.URLRequest;
-	import flash.net.URLRequestMethod;
-	import flash.net.URLVariables;
-	import flash.net.sendToURL;
-	import flash.system.ApplicationDomain;
 	import flash.system.Capabilities;
 	import flash.system.LoaderContext;
 	import flash.system.Security;
@@ -63,6 +56,11 @@
 	
 	public class PlayerCtrl extends Sprite
 	{
+		private const NORMAL_PROGRESSBAR_HEIGTH:uint = 7;
+		private const SMALL_PROGRESSBAR_HEIGTH:uint = 3;
+
+		protected var _setSizeInfo:Object = { 'ratio':'common', 'size':'100', 'ratioValue':0, 'sizeValue':1 };
+		
 		public var _ctrBar:CtrBar;							// 控制栏
 		public var _player:Player;							// 播放对象
 		public var _videoMask:VideoMask;				// 视频帷幕
@@ -71,12 +69,9 @@
 		private var _noticeBar:NoticeBar;				// 文字提示栏
 		
 		private var _mouseControl:MouseControl;	// 鼠标事件Controller
-
-
 		private var _playFullWidth:Number;			// 全屏宽度
 		private var _playFullHeight:Number;			// 全屏高度
 		
-
 		private var _playerSize:int = 0;				// 0全屏；1中屏；2小屏
 		private var _playerRealWidth:Number;		// 视频实际显示宽度
 		private var _playerRealHeight:Number;		// 视频实际显示高度
@@ -97,19 +92,16 @@
 			'您已设置启用硬件加速，刷新页面或下次打开页面时生效',
 			'正在切换至传统播放模式，请稍候...'
 		];
+
 		private var _isFirstLoad:Boolean = true;//是否该影片第一次加载
 		private var _isChangeQuality:Boolean = false;//是否影片清晰度切换
 		private var _ratioVideo:Number = 0; //后台自动化预览页面浏览影片原始尺寸添加的参数
-		protected var _setSizeInfo:Object = { 'ratio':'common', 'size':'100', 'ratioValue':0, 'sizeValue':1 };
-		private const NORMAL_PROGRESSBAR_HEIGTH:uint = 7;
-		private const SMALL_PROGRESSBAR_HEIGTH:uint = 3;
-
+		
 		private var _seekEnable:Boolean = true;
 		private var _subTitle:Subtitle;//字幕条
 		private var _isPressKeySeek:Boolean;//是否按住键盘左右键seek
 		private var _checkUserLoader:URLLoader;
 		private var _checkFlowLoader:URLLoader;
-		private var _iframeLoader:URLLoader;
 		private var _snptLoader:Loader;
 		private var _isValid:Boolean = true;				//登陆是否有效，默认有效
 		private var _isNoEnoughBytes:Boolean;				//是否流量不足
@@ -126,21 +118,9 @@
 		private var _isFlowChecked:Boolean;					//是否已经查询完流量
 		private var _isPlayStart:Boolean;					//影片是否已经开播
 		private var _isShowStopFace:Boolean;				//是否显示播放完界面
-		private var _snptIndex:uint;						//i帧截图地址index
-		private var _snptArray:Array = [];					//i帧截图地址数组
-		private var _snptAllArray:Array = [];				//i帧截图全部地址数组
-		private var _snptBmdArray:Array = [];				//i帧截图图片数组
-		private var _isReportedScreenShotError:Boolean;		//是否已上报i帧截图跨域错误
+		
 		private var _formatsObj:Object;
 		private var _isShowAutoloadTips:Boolean;
-		private var _isSnptLoaded:Boolean;
-
-		private var xlPluginCallBackFunc:Function;
-		private var xlPluginCallBackArgs:Array;
-
-		private var isXLNetStreamAfterInited:Boolean = false;
-		
-
 
 		private var _params:Object;
 
@@ -364,132 +344,7 @@
 			_isValid = true;
 			_ctrBar.dispatchPlay();
 		}
-		
-		private function onIframeComplete(evt:Event):void
-		{
-			var jsonStr:String = evt.target.data;
-			
-			JTracer.sendMessage("PlayerCtrl -> iframe url load Complete, jsonStr:" + jsonStr);
-			
-			var jsonObj:Object = com.serialization.json.JSON.deserialize(jsonStr);
-			if (jsonObj)
-			{
-				if (Number(jsonObj.ret) == 0)
-				{
-					_snptAllArray = jsonObj.res_list;
-					_snptArray = getCurSnptArray();
-					loadSnpt();
-				}
-				else
-				{
-					Tools.stat("f=iframeerror&gcid=" + Tools.getUserInfo("gcid") + "&code=" + jsonObj.ret);
-				}
-			}
-		}
-		
-		private function getCurSnptArray():Array
-		{
-			var curArray:Array = [];
-			for (var i:* in _snptAllArray)
-			{
-				if (_snptAllArray[i].gcid == Tools.getUserInfo("gcid"))
-				{
-					curArray = _snptAllArray[i].snpt_list;
-				}
-			}
-			
-			return curArray;
-		}
-		
-		private function onIframeIOError(evt:IOErrorEvent):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> iframe url load IOError");
-		}
-		
-		private function onIframeSecurityError(evt:SecurityErrorEvent):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> iframe url load SecurityError");
-		}
-		
-		private function loadSnpt():void
-		{
-			if (!_snptArray || _snptArray.length == 0)
-			{
-				return;
-			}
-			
-			var url:String = _snptArray[_snptIndex].snpt_url;
-			var req:URLRequest = new URLRequest(url);
-			
-			JTracer.sendMessage("PlayerCtrl -> iframe loadSnpt index:" + _snptIndex + ", url:" + url);
-			
-			unloadSnpt();
-			
-			_snptLoader = new Loader();
-			_snptLoader.contentLoaderInfo.addEventListener(Event.COMPLETE, onSnptLoaded);
-			_snptLoader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onSnptIOError);
-			_snptLoader.contentLoaderInfo.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onSnptSecurityError);
-			_snptLoader.load(req, new LoaderContext(true));
-		}
-		
-		private function unloadSnpt():void
-		{
-			if (_snptLoader)
-			{
-				_snptLoader.contentLoaderInfo.removeEventListener(Event.COMPLETE, onSnptLoaded);
-				_snptLoader.contentLoaderInfo.removeEventListener(IOErrorEvent.IO_ERROR, onSnptIOError);
-				_snptLoader.contentLoaderInfo.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, onSnptSecurityError);
-				try
-				{
-					_snptLoader.unloadAndStop();
-				}
-				catch (e:Error)
-				{
-					
-				}
-				_snptLoader = null;
-			}
-		}
-		
-		private function onSnptLoaded(evt:Event):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> iframe loadSnpt index:" + _snptIndex + " complete");
-			try{
-				var bm:Bitmap = _snptLoader.content as Bitmap;
-				var bmd:BitmapData = bm.bitmapData;
-				_snptBmdArray.push({bmd:bmd, url:_snptArray[_snptIndex].snpt_url});
-			}catch(e:Error){
-				JTracer.sendMessage('onSnptLoaded error--->' + e);
-			}
-			_snptIndex++;
-			if (_snptIndex >= _snptArray.length)
-			{
-				//加载完成
-				JTracer.sendMessage("PlayerCtrl -> iframe loadSnpt all complete");
-				return;
-			}
-			
-			loadSnpt();
-		}
-		
-		private function onSnptIOError(evt:IOErrorEvent):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> iframe loadSnpt IOError, index:" + _snptIndex);
-			unloadSnpt();
-		}
-		
-		private function onSnptSecurityError(evt:SecurityErrorEvent):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> iframe loadSnpt SecurityError, index:" + _snptIndex);
-			unloadSnpt();
-			
-			if (!_isReportedScreenShotError)
-			{
-				_isReportedScreenShotError = true;
-				Tools.stat("f=iframeerror&gcid=" + Tools.getUserInfo("gcid") + "&code=3");
-			}
-		}
-		
+				
 		private function onCheckFlowComplete(evt:Event):void
 		{
 			var jsonStr:String = evt.target.data;
@@ -1467,43 +1322,6 @@
 			_player.clearUp();
 		}
 		
-		public function clearSnpt():void
-		{
-			try
-			{
-				if (_iframeLoader)
-				{
-					_iframeLoader.removeEventListener(Event.COMPLETE, onIframeComplete);
-					_iframeLoader.removeEventListener(IOErrorEvent.IO_ERROR, onIframeIOError);
-					_iframeLoader.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, onIframeSecurityError);
-					_iframeLoader = null;
-				}
-			}
-			catch (e:Error)
-			{
-				
-			}
-			if (_snptLoader)
-			{
-				try
-				{
-					_snptLoader.unloadAndStop();
-					
-				}
-				catch (e:Error)
-				{
-					
-				}
-				_snptLoader.contentLoaderInfo.removeEventListener(Event.COMPLETE, onSnptLoaded);
-				_snptLoader.contentLoaderInfo.removeEventListener(IOErrorEvent.IO_ERROR, onSnptIOError);
-				_snptLoader.contentLoaderInfo.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, onSnptSecurityError);
-				_snptLoader = null;
-			}
-			_snptIndex = 0;
-			_snptArray = [];
-			_snptAllArray = [];
-			_snptBmdArray = [];
-		}
 		
 		public function flv_setPlayeUrl(arr:Array):void
 		{
@@ -1527,8 +1345,6 @@
 			JTracer.sendMessage(urlStr);
 			_player.is_invalid_time = true;
 			
-			//是否已加载i帧截图
-			_isSnptLoaded = false;
 			
 			GlobalVars.instance.loadTime = arr[0].pageLoadTime;
 			GlobalVars.instance.getVodTime = 0;
@@ -1631,32 +1447,8 @@
 
 		public function initSnpt():void
 		{
-			if (!_isSnptLoaded)
-			{
-				_isSnptLoaded = true;
-				
-				//加载i帧截图
-				_snptIndex = 0;
-				_snptBmdArray = [];
-				_isReportedScreenShotError = false;
-				if (_snptAllArray.length == 0)
-				{
-					clearSnpt();
-					
-					var iframeUrl:String = GlobalVars.instance.url_iframe + "?userid=" + Tools.getUserInfo("userid") + "&url=" + encodeURIComponent(Tools.getUserInfo("url"));
-					JTracer.sendMessage("PlayerCtrl -> iframe url start load, url:" + iframeUrl);
-					_iframeLoader = new URLLoader();
-					_iframeLoader.addEventListener(Event.COMPLETE, onIframeComplete);
-					_iframeLoader.addEventListener(IOErrorEvent.IO_ERROR, onIframeIOError);
-					_iframeLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onIframeSecurityError);
-					_iframeLoader.load(new URLRequest(iframeUrl + "&d=" + new Date().time));
-				}
-				else
-				{
-					_snptArray = getCurSnptArray();
-					loadSnpt();
-				}
-			}
+			// unimplemented
+			// 初始化截图
 		}
 		
 		public function flv_stageVideoInfo():int
@@ -2282,7 +2074,8 @@
 		//i帧截图图片数据
 		public function get snptBmdArray():Array
 		{
-			return _snptBmdArray;
+//		unimplemented		
+			return []; // 新i帧截图
 		}
 		
 		public function get isFirstOnplaying():Boolean
