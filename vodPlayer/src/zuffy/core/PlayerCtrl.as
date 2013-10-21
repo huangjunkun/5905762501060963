@@ -6,11 +6,8 @@
 	import com.common.JTracer;
 	import com.slice.StreamList;
 	import com.global.GlobalVars;
-<<<<<<< HEAD
-=======
 	import com.common.StringUtil;
 	import com.greensock.TweenLite;
->>>>>>> master
 	import com.serialization.json.JSON;
 
 	import zuffy.display.CtrBar;
@@ -29,6 +26,7 @@
 	import flash.display.Bitmap;
 	import flash.display.BitmapData;
 	import flash.display.Loader;
+	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.display.StageAlign;
 	import flash.display.StageDisplayState;
@@ -45,6 +43,10 @@
 	import flash.filters.GlowFilter;
 	import flash.net.URLLoader;
 	import flash.net.URLRequest;
+	import flash.net.URLRequestMethod;
+	import flash.net.URLVariables;
+	import flash.net.sendToURL;
+	import flash.system.ApplicationDomain;
 	import flash.system.Capabilities;
 	import flash.system.LoaderContext;
 	import flash.system.Security;
@@ -58,23 +60,7 @@
 	import flash.utils.setInterval;
 	import flash.utils.setTimeout;
 	
-<<<<<<< HEAD
-	import zuffy.ctr.contextMenu.CreateContextMenu;
-	import zuffy.display.CtrBar;
-	import zuffy.display.MouseControl;
-	import zuffy.display.notice.NoticeBar;
-	import zuffy.display.notice.bufferTip;
-	import zuffy.display.statuMenu.VideoMask;
-	import zuffy.display.subtitle.Subtitle;
-	import zuffy.events.CaptionEvent;
-	import zuffy.events.ControlEvent;
-	import zuffy.events.PlayEvent;
-	import zuffy.events.SetQulityEvent;
-	import zuffy.events.TryPlayEvent;
-
-=======
 	
->>>>>>> master
 	public class PlayerCtrl extends Sprite
 	{
 		public var _ctrBar:CtrBar;							// 控制栏
@@ -115,7 +101,6 @@
 		private var _isChangeQuality:Boolean = false;//是否影片清晰度切换
 		private var _ratioVideo:Number = 0; //后台自动化预览页面浏览影片原始尺寸添加的参数
 		protected var _setSizeInfo:Object = { 'ratio':'common', 'size':'100', 'ratioValue':0, 'sizeValue':1 };
-		
 		private const NORMAL_PROGRESSBAR_HEIGTH:uint = 7;
 		private const SMALL_PROGRESSBAR_HEIGTH:uint = 3;
 
@@ -155,6 +140,8 @@
 
 		private var isXLNetStreamAfterInited:Boolean = false;
 		
+
+
 		private var _params:Object;
 
 		public function PlayerCtrl()
@@ -621,26 +608,7 @@
 			Tools.stat("f=show_play_end&playtype=" + playtype);
 			_noticeBar.hideNoticeBar();
 		}
-<<<<<<< HEAD
-		private function onFeeSuccessHandler(evt:TryPlayEvent):void{
-			var info:Object = evt.info;
-			var _remainTimes:* = info.remainTimes;
-			tryPlayEnded(_remainTimes);
-			isNoEnoughBytes = true;
-		}
-		protected function tryPlayEventHandler(evt:TryPlayEvent):void
-		{
-			switch(evt.type)
-			{
-				case TryPlayEvent.DontNoticeBytes:
-					dontNoticeBytes();
-					break;
-			}
-		}
-
-=======
 		
->>>>>>> master
 		protected function initOther():void{
 			
 		}
@@ -1668,46 +1636,6 @@
 				return;
 			}
 			
-		}
-
-		private function execFuncWhenXLPluginInit():void{
-			JTracer.sendMessage('PlayerCtrl -> execFuncWhenXLPluginInit')
-			if(xlPluginCallBackFunc){
-				xlPluginCallBackFunc();
-			}
-			else{
-				xlPluginCallBackFunc = function _xlPluginCallBackFunc():void{
-					_player && _player.setPlayUrl(xlPluginCallBackArgs);
-					isXLNetStreamAfterInited = true;
-				}
-			}
-		}
-		private function notValidPlayer():Boolean{
-			var vodPermit:Number = Number(Tools.getUserInfo("vodPermit"));
-			var ret = ((vodPermit == 6 || vodPermit == 8 || vodPermit == 10) && Tools.getUserInfo("from") != GlobalVars.instance.fromXLPan);
-			JTracer.sendMessage('扣费用户:'+ret)
-			GlobalVars.instance.feeUser = ret;
-			return ret;
-		}
-		private function checkIsUseP2P(url:String):Boolean
-		{
-			if(notValidPlayer())return false;
-			var hostObj:Object = StringUtil.getHostPort(url);
-			var hostUrl:String = hostObj.host;
-			var machines:Array = GlobalVars.instance.httpSocketMachines['p2p'] || [];
-			JTracer.sendMessage('checkIsUseP2P...')
-			for (var k:* in machines)
-			{
-			JTracer.sendMessage('checkIsUseP2P from:'+machines[k]['from'])
-				if (machines[k]['from'] && hostUrl.indexOf(machines[k]['from']) > -1)
-				{
-					GlobalVars.instance.p2p_config_dl_link = machines[k]['to'];
-					GlobalVars.instance.p2p_config_fix_port = machines[k]['port'];
-					return true;
-				}
-			}
-			
-			return false;
 		}
 
 		public function initSnpt():void

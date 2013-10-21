@@ -1,37 +1,18 @@
 ﻿package zuffy.core
 {
 	import zuffy.display.addBytes.NoEnoughBytesFace;
-<<<<<<< HEAD
-=======
-	import zuffy.display.CtrBar;
-	import zuffy.display.MouseControl;
-	import zuffy.display.setting.SettingSpace;
->>>>>>> master
 	import zuffy.display.addBytes.AddBytesFace;
 	import zuffy.display.download.DownloadFace;
 	import zuffy.display.fileList.FileListFace;
 	import zuffy.display.question.FeedbackFace;
-<<<<<<< HEAD
 	import zuffy.display.setting.SettingSpace;
-=======
-	import zuffy.display.notice.NoticeBar;
-	import zuffy.display.notice.bufferTip;
-	import zuffy.display.tryplay.TryEndFace;
->>>>>>> master
 	import zuffy.display.share.ShareFace;
 	import zuffy.display.statuMenu.VideoMask;
 	import zuffy.display.subtitle.CaptionFace;
-<<<<<<< HEAD
 	import zuffy.display.toolBarRight.ToolBarRight;
 	import zuffy.display.toolBarRight.ToolBarRightArrow;
 	import zuffy.display.toolBarTop.ToolBarTop;
 	
-=======
-	import zuffy.display.subtitle.Subtitle;
-	import zuffy.display.toolBarRight.ToolBarRight;
-	import zuffy.display.toolBarRight.ToolBarRightArrow;
-	import zuffy.display.toolBarTop.ToolBarTop;
->>>>>>> master
 	import zuffy.events.CaptionEvent;
 	import zuffy.events.EventSet;
 	import zuffy.events.PlayEvent;	
