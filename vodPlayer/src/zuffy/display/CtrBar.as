@@ -1473,7 +1473,7 @@
 			ExternalInterface.call("flv_playerEvent", "onStop");
 			
 			if(_player.streamInPlay){
-				if ( (Math.abs(_player.streamInPlay.time - _player.totalTime) < 0.5) || (playctrlHandler._isError == true) ) 
+				if ( (Math.abs(_player.streamInPlay.time - _player.totalTime) < 0.5)) 
 				{
 					_barSlider.x = 0;
 					_barPlay.width = _barSlider.x - _barPlay.x + 6;

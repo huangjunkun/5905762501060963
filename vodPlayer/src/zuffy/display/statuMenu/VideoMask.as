@@ -459,14 +459,8 @@
 			if (streamPercent >= 1){
 				streamPercent = 1;
 			}
-			/*if (Math.floor(streamPercent*100) == 0) {
-				if(!_delayTimer.running){
-					_delayTimer.addEventListener(TimerEvent.TIMER, delayTimerHandler);
-					_delayTimer.start();
-				}
-			}else {
-				stopDelayTimer();
-			}*/
+			trace(streamPercent)
+			
 			streamPercent = streamPercent > _cacheStreamPercent ? streamPercent : _cacheStreamPercent;
 			if (_processLoading)
 			{
