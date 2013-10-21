@@ -114,7 +114,7 @@
 		private var _isFirstLoad:Boolean = true;//是否该影片第一次加载
 		private var _isChangeQuality:Boolean = false;//是否影片清晰度切换
 		private var _ratioVideo:Number = 0; //后台自动化预览页面浏览影片原始尺寸添加的参数
-		private var _setSizeInfo:Object = { 'ratio':'common', 'size':'100', 'ratioValue':0, 'sizeValue':1 };
+		protected var _setSizeInfo:Object = { 'ratio':'common', 'size':'100', 'ratioValue':0, 'sizeValue':1 };
 		private const NORMAL_PROGRESSBAR_HEIGTH:uint = 7;
 		private const SMALL_PROGRESSBAR_HEIGTH:uint = 3;
 		private var _seekEnable:Boolean = true;
@@ -125,7 +125,7 @@
 		private var _iframeLoader:URLLoader;
 		private var _snptLoader:Loader;
 		private var _isValid:Boolean = true;				//登陆是否有效，默认有效
-		private var _isNoEnoughBytes:Boolean;				//是否流量不足
+		protected var _isNoEnoughBytes:Boolean;				//是否流量不足
 		private var _videoUrlArray:Array;
 		private var _isFirstTips:Boolean = true;			//是否第一次提示上次播放时间点或字幕提示
 		private var _isFirstRemainTips:Boolean = true;		//是否第一次提示时长
@@ -224,6 +224,11 @@
 			_checkFlowLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onCheckFlowSecurityError);
 
 		}
+		//显示系统时间
+		public function setSystemTime():void
+		{
+		
+		}
 
 		protected function initializeUI(tWidth:int, tHeight:int):void{
 			
@@ -292,12 +297,12 @@
 			_screenEvent.width = stage.stageWidth;
 			_screenEvent.height = stage.stageHeight;
 			changePlayerSize();
-
+			_videoMask.setPosition();
 			_subTitle.handleStageResize(stage.stageWidth, stage.stageHeight, _isFullScreen);
 		}
 		
 		//切换视频
-		protected function exchangeVideo():void
+		public function exchangeVideo():void
 		{
 			//切换后，取消之前的字幕
 			_subTitle.hideCaption({surl:null, scid:null});
@@ -584,7 +589,7 @@
 			}
 		}
 		
-		protected function onCloseAddBytesFace():void{
+		protected function onCloseAddBytesFace(evt:Event):void{
 			if (!_player.isStop)
 			{
 				_ctrBar.dispatchPlay();
@@ -592,6 +597,8 @@
 		}
 
 		protected function pauseForever(tips:String):void{
+			//流量不足
+			_isNoEnoughBytes = true;
 			//暂停
 			if (!_player.isStop)
 			{
@@ -694,7 +701,13 @@
 		{
 			_subTitle.setStyle(evt.info);
 		}
-		
+
+		protected function saveTimeDelta():void{
+				_subTitle.saveTimeDelta();
+		}
+		protected function saveStyle():void{
+			_subTitle.saveStyle();
+		}
 		/**
 		 * 生成 player txt tip.
 		 */
@@ -1332,7 +1345,6 @@
 		
 		protected function handleMouseShowAndMove():void
 		{
-			
 			if (_ctrBar._beFullscreen && _ctrBar.hidden)
 			{
 				_ctrBar.show();
@@ -1489,11 +1501,11 @@
 			_ctrBar.show(true);
 			_noticeBar.show(true);
 			_mouseControl.fullscreen = e.fullScreen;
-			addJustStageFullScreen(_player, e.fullScreen);
-			_videoMask.setPosition();
+			addJustStageFullScreen(_player.time, e.fullScreen);
 		}
 
-		protected function addJustStageFullScreen(player:Player, isFullScreen:Boolean):void{
+		protected function addJustStageFullScreen(time:Number, isFullScreen:Boolean):void{
+			_videoMask.setPosition();
 			if (isFullScreen) {
 				ExternalInterface.call("flv_playerEvent","onFullScreen");
 				_isFullScreen = true;
@@ -1915,7 +1927,7 @@
 			return {};
 		}
 		
-		private function initJsInterface():void{
+		protected function initJsInterface():void{
 			if (ExternalInterface.available)
 			{
 				ExternalInterface.addCallback('flv_getDefaultFormat', flv_getDefaultFormat);
@@ -1966,7 +1978,6 @@
 				ExternalInterface.addCallback('flv_getTimePlayed', flv_getTimePlayed);
 				ExternalInterface.addCallback('flv_setFeeParam', flv_setFeeParam);
 				ExternalInterface.addCallback('flv_playOtherFail', flv_playOtherFail);
-				ExternalInterface.addCallback('flv_setShareLink', flv_setShareLink);
 				ExternalInterface.addCallback('flv_showBarNotice', flv_showBarNotice);
 				ExternalInterface.addCallback('flv_setToolBarEnable', flv_setToolBarEnable);
 				ExternalInterface.addCallback('flv_ready', flv_ready);
@@ -2005,18 +2016,7 @@
 			
 			_ctrBar.showBarNotice(str, showTime);
 		}
-		
-		public function flv_setShareLink(title:String, url:String):void
-		{
-			var urlStr:String = "PlayerCtrl -> js回调flv_setShareLink, 设置分享地址, title:" + title + ", url:" + url;
-			JTracer.sendMessage(urlStr);
-			
-			var tf:TextFormat = new TextFormat("宋体");
-			
-//			_shareFace.url_txt.text = url;
-//			_shareFace.url_txt.setTextFormat(tf);
-		}
-		
+				
 		public function flv_playOtherFail(boo:Boolean, tips:String = ""):void
 		{
 			var urlStr:String = "PlayerCtrl -> js回调flv_playOtherFail, 切换新视频, 是否切换成功:" + boo + ", tips:" + tips;
@@ -2063,6 +2063,44 @@
 		 */
 		public function flv_setFeeParam(obj:Object):void
 		{
+			var urlStr:String = "PlayerCtrl -> js回调flv_setFeeParam, 设置扣费参数:";
+			for (var i:* in obj)
+			{
+				urlStr += "\n" + "obj." + i + ":" + obj[i];
+			}
+			JTracer.sendMessage(urlStr);
+			
+			GlobalVars.instance.curFileInfo = obj;
+			if (obj.url.indexOf("bt://") == 0)
+			{
+				Tools.setUserInfo("urlType", "bt");
+			}
+			else if (obj.url.indexOf("magnet:?") == 0)
+			{
+				Tools.setUserInfo("urlType", "magnet");
+				
+				var info_hash_url:String = obj.url.substr(obj.url.indexOf("xt=urn:btih:"));
+				var params_arr:Array = info_hash_url.split("&");
+				var info_hash_arr:Array = params_arr[0].toString().split(":");
+				Tools.setUserInfo("info_hash", info_hash_arr[info_hash_arr.length - 1].toUpperCase());
+			}
+			else
+			{
+				Tools.setUserInfo("urlType", "url");
+			}
+			
+			if (!_isReported)
+			{
+				_isReported = true;
+				
+				//flash引用页地址
+				var quoteURL:String = ExternalInterface.call("function(){return document.location.href;}");
+				Tools.stat("f=quoteURL&url=" + quoteURL);
+			}
+			
+			//字幕
+			GlobalVars.instance.hasSubtitle = Number(obj.subtitle) == 1 ? true : false;
+			
 			//没有内嵌字幕时，底部显示字幕按钮
 			if (_ctrBar)
 			{
@@ -2088,6 +2126,15 @@
 		
 		public function flv_setToolBarEnable(obj:Object):void
 		{
+			var urlStr:String = "PlayerCtrl -> js回调flv_setToolBarEnable, 设置工具栏按钮是否可点:";
+			for (var i:* in obj)
+			{
+				urlStr += "\n" + "obj." + i + ":" + obj[i];
+			}
+			JTracer.sendMessage(urlStr);
+			
+			GlobalVars.instance.enableShare = obj.enableShare;
+			
 			if (_ctrBar)
 			{
 				_ctrBar.enableFileList = obj.enableFileList || false;
@@ -2407,7 +2454,15 @@
 			}
 			*/
 		}
-		
+		protected function mouseWheel(delta:Number):void{
+			if( _isFullScreen )
+			{
+				if( delta > 0 )
+					_ctrBar.handleVolumeFromKey( true );
+				else
+					_ctrBar.handleVolumeFromKey( false );
+			}
+		}
 		public function showHighSpeedTips(higherFormat:String, speed:Number):void
 		{
 			var globalVars:GlobalVars = GlobalVars.instance;
