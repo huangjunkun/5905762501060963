@@ -797,7 +797,6 @@
 					isChangeQuality = true;
 					_ctrBar.isClickBarSeek = false;
 					_isPressKeySeek = false;
-					//this._ctrBar._isShowSpolier = true;
 					break;
 				case 'autio_qulity':
 					_bufferTip.autioChangeQuality();
@@ -838,7 +837,6 @@
 					var ygcid:String = Tools.getUserInfo("ygcid");
 					Tools.stat("b=drag&gcid=" + ygcid + "&t=" + getPlayProgress(true));
 					ExternalInterface.call("flv_playerEvent", "onSeek", seekTime);
-					//_bufferTip.clearBreakCount();
 					break;
 				case 'Stop':
 					hideNoticeBar();
@@ -937,19 +935,14 @@
 						if ( !(GlobalVars.instance.isXLNetStreamValid == 1) && (_ctrBar.isClickBarSeek || _isPressKeySeek))
 						{
 							var preloaderDeler:Number = _player.streamInPlay.bufferTime / _player.totalTime * _player.totalByte;
-							//JTracer.sendMessage("numProgress 1a:" + preloaderDeler);
 							preloaderDeler = _player.streamInPlay.bytesTotal == 0 || _player.streamInPlay.bytesTotal > preloaderDeler ? preloaderDeler : _player.streamInPlay.bytesTotal;
-							//JTracer.sendMessage("numProgress 1b:" + preloaderDeler);
 							numProgress = _player.streamInPlay.bytesLoaded / preloaderDeler;
-							/*JTracer.sendMessage("numProgress bytesLoaded:"+_player.streamInPlay.bytesLoaded +
-							" bytesTotal:"+_player.streamInPlay.bytesTotal+
-							" preloaderDeler:"+preloaderDeler+
-							" 1c:" + numProgress);*/
+							
 						}
 						else
 						{
 							numProgress = _player.streamInPlay.bufferLength / _player.streamInPlay.bufferTime;
-							//JTracer.sendMessage("numProgress 2:" + numProgress + "bufferLength:" + _player.streamInPlay.bufferLength + " bufferTime:" + _player.streamInPlay.bufferTime);
+							
 						}
 						
 						_videoMask.updateProgress(numProgress < 0 ? 0 : numProgress);
@@ -966,7 +959,6 @@
 					//stage.frameRate = 20;
 					if( !isFirstLoad )
 						this.normalPlayProgressBar();//遇到缓冲，进度条变大
-					//trace("开始缓冲");
 					break;
 				case 'BufferEnd':
 					_ctrBar.isClickBarSeek = false;
@@ -1051,7 +1043,6 @@
 						_player.dispatchEvent(new PlayEvent(PlayEvent.PLAY_4_STAGE));
 					}
 				}
-				//eve.updateAfterEvent();
 			});
 			_time.start();
 		}
