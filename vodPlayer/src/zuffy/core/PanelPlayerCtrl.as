@@ -4,26 +4,22 @@
 	import zuffy.display.addBytes.NoEnoughBytesFace;
 	import zuffy.display.CtrBar;
 	import zuffy.display.MouseControl;
+	import zuffy.display.setting.SettingSpace;
 	import zuffy.display.addBytes.AddBytesFace;
-	import zuffy.display.addBytes.NoEnoughBytesFace;
 	import zuffy.display.download.DownloadFace;
 	import zuffy.display.fileList.FileListFace;
+	import zuffy.display.question.FeedbackFace;
 	import zuffy.display.notice.NoticeBar;
 	import zuffy.display.notice.bufferTip;
-	import zuffy.display.question.FeedbackFace;
 	import zuffy.display.tryplay.TryEndFace;
-	import zuffy.display.setting.SettingSpace;
 	import zuffy.display.share.ShareFace;
 	import zuffy.display.subtitle.Subtitle;
 	import zuffy.display.statuMenu.VideoMask;
-	import zuffy.display.tryplay.TryEndFace;
 	import zuffy.display.subtitle.CaptionFace;
 	import zuffy.display.subtitle.Subtitle;
-	import zuffy.display.tip.ToolTip;
 	import zuffy.display.toolBarRight.ToolBarRight;
 	import zuffy.display.toolBarRight.ToolBarRightArrow;
 	import zuffy.display.toolBarTop.ToolBarTop;
-	import zuffy.display.tryplay.TryEndFace;
 	import zuffy.events.CaptionEvent;
 	import zuffy.events.ControlEvent;
 	import zuffy.events.EventSet;
@@ -281,10 +277,8 @@
 			loadPanel(comFunc);
 		}
 		
-		override protected function tryPlayEventHandler(evt:TryPlayEvent):void
+		private function tryPlayEventHandler(evt:TryPlayEvent):void
 		{
-			super.tryPlayEventHandler(evt);
-
 			switch(evt.type)
 			{
 				case TryPlayEvent.BuyVIP:
@@ -302,7 +296,16 @@
 				case TryPlayEvent.GetBytes:
 					getBytes();
 					break;
+				case TryPlayEvent.DontNoticeBytes:
+					dontNoticeBytes();
+					break;
 			}
+		}
+		private function onFeeSuccessHandler(evt:TryPlayEvent):void{
+			var info:Object = evt.info;
+			var _remainTimes = info.remainTimes;
+			tryPlayEnded(_remainTimes);
+			isNoEnoughBytes = true;
 		}
 		
 		private function hideTryPanel():void
@@ -500,6 +503,8 @@
 			this.addEventListener(TryPlayEvent.GoHome, tryPlayEventHandler);
 			this.addEventListener(TryPlayEvent.HidePanel, tryPlayEventHandler);
 			this.addEventListener(TryPlayEvent.GetBytes, tryPlayEventHandler);
+			this.addEventListener(TryPlayEvent.DontNoticeBytes, tryPlayEventHandler);
+			this.addEventListener(TryPlayEvent.FEE_SUCCESS, onFeeSuccessHandler)
 		}
 
 		/**
@@ -765,7 +770,7 @@
 			_captionFace.showErrorStatus();
 		}
 		
-		private function loadCaptionStyle(evt:EventSet):void
+		private function loadCaptionStyle(evt:CaptionEvent):void
 		{
 			_captionFace.loadCaptionStyle();
 		}

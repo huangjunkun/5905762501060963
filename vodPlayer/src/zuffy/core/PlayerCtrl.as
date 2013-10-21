@@ -1,14 +1,27 @@
 ﻿package zuffy.core
 {
 	import com.Player;
+	import com.common.Tools;
 	import com.common.Cookies;
 	import com.common.JTracer;
-	import com.common.StringUtil;
-	import com.common.Tools;
+	import com.slice.StreamList;
 	import com.global.GlobalVars;
+	import com.common.StringUtil;
 	import com.greensock.TweenLite;
 	import com.serialization.json.JSON;
-	import com.slice.StreamList;
+
+	import zuffy.display.CtrBar;
+	import zuffy.display.MouseControl;
+	import zuffy.display.notice.NoticeBar;
+	import zuffy.display.notice.bufferTip;
+	import zuffy.display.subtitle.Subtitle;
+	import zuffy.display.statuMenu.VideoMask;
+	import zuffy.ctr.contextMenu.CreateContextMenu;
+	
+	import zuffy.events.PlayEvent;
+	import zuffy.events.CaptionEvent;
+	import zuffy.events.ControlEvent;
+	import zuffy.events.SetQulityEvent;
 	
 	import flash.display.Bitmap;
 	import flash.display.BitmapData;
@@ -47,61 +60,34 @@
 	import flash.utils.setInterval;
 	import flash.utils.setTimeout;
 	
-	import zuffy.ctr.contextMenu.CreateContextMenu;
-	import zuffy.display.addBytes.NoEnoughBytesFace;
-	import zuffy.display.CtrBar;
-	import zuffy.display.MouseControl;
-	import zuffy.display.addBytes.AddBytesFace;
-	import zuffy.display.addBytes.NoEnoughBytesFace;
-	import zuffy.display.download.DownloadFace;
-	import zuffy.display.fileList.FileListFace;
-	import zuffy.display.notice.NoticeBar;
-	import zuffy.display.notice.bufferTip;
-	import zuffy.display.question.FeedbackFace;
-	import zuffy.display.tryplay.TryEndFace;
-	import zuffy.display.setting.SettingSpace;
-	import zuffy.display.share.ShareFace;
-	import zuffy.display.subtitle.Subtitle;
-	import zuffy.display.statuMenu.VideoMask;
-	import zuffy.display.tryplay.TryEndFace;
-	import zuffy.display.subtitle.CaptionFace;
-	import zuffy.display.subtitle.Subtitle;
-	import zuffy.display.tip.ToolTip;
-	import zuffy.display.toolBarRight.ToolBarRight;
-	import zuffy.display.toolBarRight.ToolBarRightArrow;
-	import zuffy.display.toolBarTop.ToolBarTop;
-	import zuffy.display.tryplay.TryEndFace;
-	import zuffy.events.CaptionEvent;
-	import zuffy.events.ControlEvent;
-	import zuffy.events.EventSet;
-	import zuffy.events.PlayEvent;
-	import zuffy.events.SetQulityEvent;
-	import zuffy.events.TryPlayEvent;
-
+	
 	public class PlayerCtrl extends Sprite
 	{
-		public var _ctrBar:CtrBar;
-		public var _player:Player;
-		public var _isError:Boolean = false;
-		public var _videoMask:VideoMask;
-		private var _screenEvent:Sprite;
-		private var _playFullWidth:Number;
-		private var _playFullHeight:Number;
-		public  var _bufferTip:bufferTip;
-		private var _noticeBar:NoticeBar;;
-		private var _showRightTimer:Timer;
-		private var _hideRightTimer:Timer;
-		private var _isInitialize:Boolean = false;
-		private var _mouseControl:MouseControl;
-		private var _movieType:String;
-		private var _playerSize:int = 0;//0全屏；1中屏；2小屏
-		private var _playerRealWidth:Number;
-		private var _playerRealHeight:Number;
+		public var _ctrBar:CtrBar;							// 控制栏
+		public var _player:Player;							// 播放对象
+		public var _videoMask:VideoMask;				// 视频帷幕
+		private var _eventCaptureScreen:Sprite;	// 触摸屏
+		public  var _bufferTip:bufferTip;				// 缓冲提示
+		private var _noticeBar:NoticeBar;				// 文字提示栏
+		
+		private var _mouseControl:MouseControl;	// 鼠标事件Controller
+
+
+		private var _playFullWidth:Number;			// 全屏宽度
+		private var _playFullHeight:Number;			// 全屏高度
+		
+
+		private var _playerSize:int = 0;				// 0全屏；1中屏；2小屏
+		private var _playerRealWidth:Number;		// 视频实际显示宽度
+		private var _playerRealHeight:Number;		// 视频实际显示高度
+
 		private var _isDoubleClick:Boolean = false;
 		private var _isFullScreen:Boolean = false;
 		private var _isBuffering:Boolean;
+
 		private var _seekDelayTimer:Timer;
 		private var _seekDelayTimer2:Timer;
+
 		private var _noticeMsgArr:Array = [
 			'广告时间，请稍候，马上为您播放精彩节目!',
 			'当前网速较慢，建议<a href="event:pause">暂停</a>缓冲几分钟',
@@ -115,8 +101,10 @@
 		private var _isChangeQuality:Boolean = false;//是否影片清晰度切换
 		private var _ratioVideo:Number = 0; //后台自动化预览页面浏览影片原始尺寸添加的参数
 		protected var _setSizeInfo:Object = { 'ratio':'common', 'size':'100', 'ratioValue':0, 'sizeValue':1 };
+		
 		private const NORMAL_PROGRESSBAR_HEIGTH:uint = 7;
 		private const SMALL_PROGRESSBAR_HEIGTH:uint = 3;
+
 		private var _seekEnable:Boolean = true;
 		private var _subTitle:Subtitle;//字幕条
 		private var _isPressKeySeek:Boolean;//是否按住键盘左右键seek
@@ -125,7 +113,7 @@
 		private var _iframeLoader:URLLoader;
 		private var _snptLoader:Loader;
 		private var _isValid:Boolean = true;				//登陆是否有效，默认有效
-		protected var _isNoEnoughBytes:Boolean;				//是否流量不足
+		private var _isNoEnoughBytes:Boolean;				//是否流量不足
 		private var _videoUrlArray:Array;
 		private var _isFirstTips:Boolean = true;			//是否第一次提示上次播放时间点或字幕提示
 		private var _isFirstRemainTips:Boolean = true;		//是否第一次提示时长
@@ -153,8 +141,6 @@
 
 		private var isXLNetStreamAfterInited:Boolean = false;
 		
-
-
 		private var _params:Object;
 
 		public function PlayerCtrl()
@@ -186,8 +172,7 @@
 		}
 
 		protected function initGlobalData(tParams:Object):void{
-			_movieType = tParams['movieType'] ? tParams['movieType'] : 'movie';
-			GlobalVars.instance.movieType = _movieType;
+			GlobalVars.instance.movieType = tParams['movieType'] ? tParams['movieType'] : 'movie';
 			GlobalVars.instance.windowMode = tParams['windowMode'] || 'browser';
 			GlobalVars.instance.platform = tParams['platform'] || 'webpage';
 			GlobalVars.instance.isMacWebPage = ((typeof tParams['isMacWebPage'] != "undefined") && tParams['isMacWebPage'] != 'false');
@@ -244,48 +229,45 @@
 			_subTitle = new Subtitle(this, tWidth, tHeight);
 			_subTitle.handleStageResize(stage.stageWidth, stage.stageHeight);
 			
-			_screenEvent = new Sprite();
-			_screenEvent.graphics.clear();
-			_screenEvent.graphics.beginFill(0xffffff, 0);
-			_screenEvent.graphics.drawRect(0, 0, tWidth, tHeight);
-			_screenEvent.graphics.endFill();
-			_screenEvent.doubleClickEnabled = true;
-			_screenEvent.mouseEnabled = true;
-			this.addChild(_screenEvent);
-			_screenEvent.addEventListener(MouseEvent.DOUBLE_CLICK, onDoubleClickHandle);
-			_screenEvent.addEventListener(MouseEvent.CLICK, onClickHandle);
+			_eventCaptureScreen = new Sprite();
+			_eventCaptureScreen.graphics.clear();
+			_eventCaptureScreen.graphics.beginFill(0xffffff, 0);
+			_eventCaptureScreen.graphics.drawRect(0, 0, tWidth, tHeight);
+			_eventCaptureScreen.graphics.endFill();
+			_eventCaptureScreen.doubleClickEnabled = true;
+			_eventCaptureScreen.mouseEnabled = true;
+			_eventCaptureScreen.addEventListener(MouseEvent.DOUBLE_CLICK, onDoubleClickHandle);
+			_eventCaptureScreen.addEventListener(MouseEvent.CLICK, onClickHandle);
+			this.addChild(_eventCaptureScreen);
 			
-			_videoMask = new VideoMask(this, _movieType);
+			_videoMask = new VideoMask(this, GlobalVars.instance.movieType);
 			_videoMask.addEventListener("StartPlayClick", onStartPlayClick);
 			_videoMask.addEventListener("Refresh", onRefresh);
 			this.addChild(_videoMask);
 			_videoMask.setPosition();
+
+			_bufferTip = new bufferTip(_player);
+			_bufferTip.name = "_bufferTip";
+			this.addChild(_bufferTip);
+			
+			_noticeBar = new NoticeBar(this);
+			this.addChild(_noticeBar);
 			
 			_ctrBar = new CtrBar(tWidth,tHeight,_has_fullscreen, this);
-			this.addChild(_ctrBar);
 			_ctrBar.showPlayOrPauseButton='PLAY';
 			_ctrBar.flvPlayer=_player;
 			_ctrBar.available = true;
 			_ctrBar.faceLifting(stage.stageWidth);
-			
+			_ctrBar.y = stage.stageHeight - 33;
+			_ctrBar.faceLifting(stage.stageWidth);
+			this.addChild(_ctrBar);
+
 			_mouseControl = new MouseControl(this);
 			_mouseControl.addEventListener("MOUSE_SHOWED", handleMouseInside);
 			_mouseControl.addEventListener("MOUSE_HIDED", handleMouseOutSide);	
 			_mouseControl.addEventListener("MOUSE_MOVEED", handleMouseInside);
 			_mouseControl.addEventListener("MOUSE_MOVEOUT", handleMouseMoveOut);
 			_mouseControl.addEventListener("SMALL_PLAY_PROGRESS_BAR", handleMouseHide2 );//缩小播放进度条;
-			
-			_bufferTip = new bufferTip(_player);
-			_bufferTip.name = "_bufferTip";
-			this.addChild(_bufferTip);
-			this.swapChildren(_ctrBar, _bufferTip);
-			
-			_ctrBar.y = stage.stageHeight - 33;
-			_ctrBar.faceLifting(stage.stageWidth);
-			
-			_noticeBar = new NoticeBar(this);
-			addChild(_noticeBar);
-			swapChildren(_ctrBar, _noticeBar);
 		}
 		
 		protected function on_stage_RESIZE(e:Event):void{
@@ -294,8 +276,8 @@
 
 			_player.resizePlayerSize(stage.stageWidth,stage.stageHeight );
 
-			_screenEvent.width = stage.stageWidth;
-			_screenEvent.height = stage.stageHeight;
+			_eventCaptureScreen.width = stage.stageWidth;
+			_eventCaptureScreen.height = stage.stageHeight;
 			changePlayerSize();
 			_videoMask.setPosition();
 			_subTitle.handleStageResize(stage.stageWidth, stage.stageHeight, _isFullScreen);
@@ -371,8 +353,6 @@
 		private function onCheckUserIOError(evt:IOErrorEvent):void
 		{
 			JTracer.sendMessage("PlayerCtrl -> onCheckUserIOError, check is valid IOError");
-			
-			//showInvalidLoginLogo();
 			_isValid = true;
 			_ctrBar.dispatchPlay();
 		}
@@ -380,8 +360,6 @@
 		private function onCheckUserSecurityError(evt:SecurityErrorEvent):void
 		{
 			JTracer.sendMessage("PlayerCtrl -> onCheckUserSecurityError, check is valid SecurityError");
-			
-			//showInvalidLoginLogo();
 			_isValid = true;
 			_ctrBar.dispatchPlay();
 		}
@@ -629,22 +607,7 @@
 			Tools.stat("f=show_play_end&playtype=" + playtype);
 			_noticeBar.hideNoticeBar();
 		}
-		private function onFeeSuccessHandler(evt:TryPlayEvent):void{
-			var info:Object = evt.info;
-			var _remainTimes = info.remainTimes;
-			tryPlayEnded(_remainTimes);
-			isNoEnoughBytes = true;
-		}
-		protected function tryPlayEventHandler(evt:TryPlayEvent):void
-		{
-			switch(evt.type)
-			{
-				case TryPlayEvent.DontNoticeBytes:
-					dontNoticeBytes();
-					break;
-			}
-		}
-
+		
 		protected function initOther():void{
 			
 		}
@@ -689,9 +652,6 @@
 			this.addEventListener(CaptionEvent.HIDE_CAPTION, hideCaption);
 			this.addEventListener(CaptionEvent.SET_CONTENT, setCaptionContent);
 			this.addEventListener(CaptionEvent.SET_TIME, setCaptionTime);
-
-			this.addEventListener(TryPlayEvent.DontNoticeBytes, tryPlayEventHandler);
-			this.addEventListener(TryPlayEvent.FEE_SUCCESS, onFeeSuccessHandler)
 		}
 
 		/**
@@ -811,7 +771,7 @@
 			}
 		}
 		
-		private function dontNoticeBytes():void
+		protected function dontNoticeBytes():void
 		{
 			hideNoticeBar();
 			Cookies.setCookie('isNoticeBytes', false);
@@ -948,32 +908,6 @@
 							{
 								//开播时间等于0，显示上次观看时间点提示
 								_noticeBar.setContent("已从上次观看时间点（" + timeStr + "）播放，<a href='event:replay'>我要从头看</a>", false, 5);
-							}
-							else
-							{
-								//重播时不显示字幕提示
-								if (!_player.isResetStart)
-								{
-									var isHide:*;
-									//有自动加载的字幕
-									if (GlobalVars.instance.isHasAutoloadCaption)
-									{
-										/*isHide = Cookies.getCookie('hideAutoCaptionTips');
-										if (!isHide)
-										{
-											_noticeBar.setContent("已自动帮您加载字幕，您可以点击“字幕”来更换或取消，<a href='event:hideAutoCaptionTips'>不再提示</a>", false, 20);
-										}*/
-									}
-									else
-									{
-										/*isHide = Cookies.getCookie('hideNoCaptionTips');
-										if (!isHide && !GlobalVars.instance.hasSubtitle)
-										{
-											Cookies.setCookie('hideNoCaptionTips', true);
-											_noticeBar.setContent("云播支持手动上传字幕，并可对字幕进行大小、样式及时间轴调整，<a href='event:showCaptionFace'>去试试</a>，<a href='event:hideNoCaptionTips'>知道了</a>", false, 5);
-										}*/
-									}
-								}
 							}
 						}
 					}
@@ -1393,7 +1327,6 @@
 		}
 		private function smallPlayProgressBar():void
 		{
-			//trace( "是否正在缓冲:" + _isBuffering + "是否第一次加载：" + isFirstLoad + "暂停按钮是否可见:" + _ctrBar._btnPauseBig.visible  );
 			if( _ctrBar._barBg.height ==  NORMAL_PROGRESSBAR_HEIGTH )
 			{
 				if( !_isBuffering || isFirstLoad || _ctrBar._btnPauseBig.visible )
@@ -1469,22 +1402,7 @@
 		protected function changePlayerSize():void
 		{
 			adaptRealSize();
-			var num:Number = 1;
-			switch(_playerSize)
-			{
-				case 0:
-					num = 1;
-					break;
-				case 1:
-					num = 0.75;
-					break;
-				case 2:
-					num = 0.5;
-					break
-				default:
-					num = 1;
-					break;
-			}
+			var num:Number = 1 - _playerSize * 0.25;
 			var rWidth:int = _playerRealWidth * num;
 			var rHeight:int = _playerRealHeight * num;
 			_player.width = rWidth;
@@ -1515,7 +1433,6 @@
 				_ctrBar.y = stage.stageHeight - 33;
 			}else {
 				ExternalInterface.call("flv_playerEvent", "onExitFullScreen");
-				//_playerSize = 0;
 				_isFullScreen = false;
 				changePlayerSize();
 			}
@@ -1700,7 +1617,6 @@
 			//点播时默认流量充足
 			_isNoEnoughBytes = false;
 			_videoUrlArray = arr;
-			_isError = false;
 			_ctrBar.visible = true;
 			//重置宽高比例
 			//_setSizeInfo['ratio'] = 'common';
