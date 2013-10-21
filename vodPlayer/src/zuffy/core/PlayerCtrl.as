@@ -6,14 +6,12 @@
 	import com.common.StringUtil;
 	import com.common.Tools;
 	import com.global.GlobalVars;
-	import com.greensock.TweenLite;
 	import com.serialization.json.JSON;
 	import com.slice.StreamList;
 	
 	import flash.display.Bitmap;
 	import flash.display.BitmapData;
 	import flash.display.Loader;
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.display.StageAlign;
 	import flash.display.StageDisplayState;
@@ -30,10 +28,6 @@
 	import flash.filters.GlowFilter;
 	import flash.net.URLLoader;
 	import flash.net.URLRequest;
-	import flash.net.URLRequestMethod;
-	import flash.net.URLVariables;
-	import flash.net.sendToURL;
-	import flash.system.ApplicationDomain;
 	import flash.system.Capabilities;
 	import flash.system.LoaderContext;
 	import flash.system.Security;
@@ -48,32 +42,14 @@
 	import flash.utils.setTimeout;
 	
 	import zuffy.ctr.contextMenu.CreateContextMenu;
-	import zuffy.display.addBytes.NoEnoughBytesFace;
 	import zuffy.display.CtrBar;
 	import zuffy.display.MouseControl;
-	import zuffy.display.addBytes.AddBytesFace;
-	import zuffy.display.addBytes.NoEnoughBytesFace;
-	import zuffy.display.download.DownloadFace;
-	import zuffy.display.fileList.FileListFace;
 	import zuffy.display.notice.NoticeBar;
 	import zuffy.display.notice.bufferTip;
-	import zuffy.display.question.FeedbackFace;
-	import zuffy.display.tryplay.TryEndFace;
-	import zuffy.display.setting.SettingSpace;
-	import zuffy.display.share.ShareFace;
-	import zuffy.display.subtitle.Subtitle;
 	import zuffy.display.statuMenu.VideoMask;
-	import zuffy.display.tryplay.TryEndFace;
-	import zuffy.display.subtitle.CaptionFace;
 	import zuffy.display.subtitle.Subtitle;
-	import zuffy.display.tip.ToolTip;
-	import zuffy.display.toolBarRight.ToolBarRight;
-	import zuffy.display.toolBarRight.ToolBarRightArrow;
-	import zuffy.display.toolBarTop.ToolBarTop;
-	import zuffy.display.tryplay.TryEndFace;
 	import zuffy.events.CaptionEvent;
 	import zuffy.events.ControlEvent;
-	import zuffy.events.EventSet;
 	import zuffy.events.PlayEvent;
 	import zuffy.events.SetQulityEvent;
 	import zuffy.events.TryPlayEvent;
@@ -631,7 +607,7 @@
 		}
 		private function onFeeSuccessHandler(evt:TryPlayEvent):void{
 			var info:Object = evt.info;
-			var _remainTimes = info.remainTimes;
+			var _remainTimes:* = info.remainTimes;
 			tryPlayEnded(_remainTimes);
 			isNoEnoughBytes = true;
 		}

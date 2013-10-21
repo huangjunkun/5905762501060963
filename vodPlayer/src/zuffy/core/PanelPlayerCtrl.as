@@ -1,34 +1,22 @@
 ﻿package zuffy.core
 {
-	import zuffy.ctr.contextMenu.CreateContextMenu;
 	import zuffy.display.addBytes.NoEnoughBytesFace;
-	import zuffy.display.CtrBar;
-	import zuffy.display.MouseControl;
 	import zuffy.display.addBytes.AddBytesFace;
 	import zuffy.display.addBytes.NoEnoughBytesFace;
 	import zuffy.display.download.DownloadFace;
 	import zuffy.display.fileList.FileListFace;
-	import zuffy.display.notice.NoticeBar;
-	import zuffy.display.notice.bufferTip;
 	import zuffy.display.question.FeedbackFace;
-	import zuffy.display.tryplay.TryEndFace;
 	import zuffy.display.setting.SettingSpace;
 	import zuffy.display.share.ShareFace;
-	import zuffy.display.subtitle.Subtitle;
 	import zuffy.display.statuMenu.VideoMask;
-	import zuffy.display.tryplay.TryEndFace;
 	import zuffy.display.subtitle.CaptionFace;
-	import zuffy.display.subtitle.Subtitle;
-	import zuffy.display.tip.ToolTip;
 	import zuffy.display.toolBarRight.ToolBarRight;
 	import zuffy.display.toolBarRight.ToolBarRightArrow;
 	import zuffy.display.toolBarTop.ToolBarTop;
-	import zuffy.display.tryplay.TryEndFace;
+	
 	import zuffy.events.CaptionEvent;
-	import zuffy.events.ControlEvent;
 	import zuffy.events.EventSet;
-	import zuffy.events.PlayEvent;
-	import zuffy.events.SetQulityEvent;
+	import zuffy.events.PlayEvent;	
 	import zuffy.events.TryPlayEvent;
 	import flash.events.Event;
 	import flash.events.IOErrorEvent;
