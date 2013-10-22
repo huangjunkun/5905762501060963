@@ -64,12 +64,12 @@
 		private var _totalTime:Number = 3 * 60 * 1000;
 		private var _timeInterval:Number;
 		private var _isGrade:Boolean;
+		public var timerHandler:Function;
 		
 		public function Subtitle(w:Number = 352, h:Number = 293) 
 		{
 			_currentWidth = w;
 			_currentHeight = h;
-			
 			if(stage){
 				onAddedToStage();
 			}else{
@@ -304,7 +304,7 @@
 			_getTitleTimer = new Timer(50);
 			_getTitleTimer.addEventListener(TimerEvent.TIMER, function handlGetTitleTimer():void{
 				if(_scid)
-				dispatchEvent(new CaptionEvent(CaptionEvent.GET_TITLE_TIMER));
+				timerHandler && timerHandler();
 			});
 		}
 		

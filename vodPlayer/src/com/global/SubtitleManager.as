@@ -3,7 +3,7 @@
 	import zuffy.display.subtitle.Subtitle;
 	import zuffy.events.CaptionEvent;
 	import com.common.JTracer;
-
+	
 	public class SubtitleManager {
 		private var _subTitle:Subtitle;					//字幕条
 		private var mainCtrl:PlayerCtrl;
@@ -16,6 +16,7 @@
 		{
 			if (!_instance)
 			{
+				
 				_instance = new SubtitleManager();
 			}
 			
@@ -23,17 +24,21 @@
 		}
 
 		public function CSubtitleMake(p:PlayerCtrl, w:Number, h:Number):Subtitle {
-			_subTitle = new Subtitle(w, h);
-
-			p.addEventListener(CaptionEvent.SET_STYLE, setCaptionStyle);
-			p.addEventListener(CaptionEvent.LOAD_CONTENT, loadCaptionContent);
-			p.addEventListener(CaptionEvent.HIDE_CAPTION, hideCaption);
-			p.addEventListener(CaptionEvent.SET_CONTENT, setCaptionContent);
-			p.addEventListener(CaptionEvent.SET_TIME, setCaptionTime);
-
-			p.addChild(_subTitle);
 			mainCtrl = p;
 
+			_subTitle = new Subtitle(w, h);
+			_subTitle.timerHandler = function handlGetTitleTimer():void{
+				if(mainCtrl.videoIsPlaying)
+				_subTitle.setPlayerTime(mainCtrl.videoTime, mainCtrl.isStartPlayLoading);
+			} 
+			mainCtrl.addEventListener(CaptionEvent.SET_STYLE, setCaptionStyle);
+			mainCtrl.addEventListener(CaptionEvent.LOAD_CONTENT, loadCaptionContent);
+			mainCtrl.addEventListener(CaptionEvent.HIDE_CAPTION, hideCaption);
+			mainCtrl.addEventListener(CaptionEvent.SET_CONTENT, setCaptionContent);
+			mainCtrl.addEventListener(CaptionEvent.SET_TIME, setCaptionTime);
+
+			p.addChild(_subTitle);
+			
 			return _subTitle;
 		}
 
@@ -111,6 +116,5 @@
 		public function handleStageResize(isFullScreen:Boolean):void {
 			_subTitle.handleStageResize(isFullScreen);
 		}
-
 	}
 }

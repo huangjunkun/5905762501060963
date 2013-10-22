@@ -37,7 +37,6 @@
 	import zuffy.display.notice.NoticeBar;
 	import zuffy.display.notice.bufferTip;
 	import zuffy.display.statuMenu.VideoMask;
-	import zuffy.display.subtitle.Subtitle;
 	import zuffy.events.CaptionEvent;
 	import zuffy.events.ControlEvent;
 	import zuffy.events.PlayEvent;
@@ -1889,7 +1888,16 @@
 		{
 			_isStopNormal = boo;
 		}
+
+		// 视频处于播放状态
+		public function get videoIsPlaying():Boolean {
+			return !(_player.isPause || _player.isStop || isBuffering);
+		}
 		
+		public function get videoTime():Number{
+			return _player.time;
+		}
+
 		//影片是否已经开播
 		public function get isPlayStart():Boolean
 		{
@@ -2004,18 +2012,11 @@
 			return false;
 		}
 		
+
 		public function get isStartPlayLoading():Boolean
 		{
 			return _videoMask.isStartPlayLoading;
 		}
 		
-		// 字幕时间计算
-		private function handlGetTitleTimer(e:CaptionEvent):void
-		{
-			var subtitle:Subtitle = e.target as Subtitle;
-			var isvalid:Boolean = !(_player.isPause || _player.isStop || isBuffering);
-			if(isvalid)
-			subtitle.setPlayerTime(_player.time, isStartPlayLoading);
-		}
 	}
 }
