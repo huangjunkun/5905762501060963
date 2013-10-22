@@ -28,6 +28,7 @@
 	import com.Player;
 	import zuffy.events.CaptionEvent;
 	import zuffy.core.PlayerCtrl;
+	import flash.events.EventDispatcher;
 	
 	/**
 	 * ...字幕框
@@ -35,18 +36,16 @@
 	 */
 	public class Subtitle extends Sprite
 	{
-		private var _player:Player;
 		private var _currentWidth:Number;
 		private var _currentHeight:Number;
 		private var _txtSubTitle:TextField;
 		private var _normalTextFormat:TextFormat;
 		private var _normalTextFilter:GlowFilter;
-        private var _arrList:Array;
-        private var _lastTime:uint = 0;
-        private var _lastIndex:uint = 0;		
+		private var _arrList:Array;
+		private var _lastTime:uint = 0;
+		private var _lastIndex:uint = 0;
 		private var _getTitleTimer:Timer;
 		private var _captionStamp:Number = 0;
-		private var _mainMc:PlayerCtrl;
 		private var _fontSize:Number = 25;
 		private var _scid:String;
 		private var _surl:String;
@@ -66,18 +65,29 @@
 		private var _timeInterval:Number;
 		private var _isGrade:Boolean;
 		
-		public function Subtitle(mainMc:PlayerCtrl, w:Number = 352, h:Number = 293) 
+		public function Subtitle(w:Number = 352, h:Number = 293) 
 		{
-			this.visible = false;
-			_mainMc = mainMc;
-			_mainMc.addChild(this);
 			_currentWidth = w;
 			_currentHeight = h;
+			
+			if(stage){
+				onAddedToStage();
+			}else{
+				// 侦听该类是否被添加到了舞台显示列表
+				addEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
+			}
+
+		}
+
+		private function onAddedToStage(e:Event=null):void {
+			removeEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
+			this.visible = false;			
 			initializeViews();
 			initializeGetSubtitleTimer();
 			initRegExp();
+			handleStageResize();
 		}
-		
+
 		public function get hasSubtitle():Boolean
 		{
 			if (_arrList && _arrList.length > 0)
@@ -124,20 +134,7 @@
 			
 			var req:URLRequest;
 			var loader:URLLoader;
-			/*
-			if (_surl && _surl != "")
-			{
-				req = new URLRequest(_surl);
-				
-				loader = new URLLoader();
-				loader.addEventListener(Event.COMPLETE, onLoadComplete);
-				loader.addEventListener(IOErrorEvent.IO_ERROR, onLoadError);
-				loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onLoadSecurityError);
-				loader.addEventListener(HTTPStatusEvent.HTTP_STATUS, onLoadStatusError);
-				loader.load(req);
-			}
-			else 
-			*/
+			
 			if (_scid)
 			{
 				var suffix:String = _isRetry ? "&t=" + new Date().time : "";
@@ -289,9 +286,7 @@
 			_normalTextFormat.font = fontFamily;
 			_normalTextFormat.align = "center";
 			_normalTextFormat.bold = true;
-			
 			_normalTextFilter = new GlowFilter(0x000000, 1, 2, 2, 5, BitmapFilterQuality.HIGH);
-			
 			_txtSubTitle = new TextField();
 			_txtSubTitle.wordWrap = true;
 			_txtSubTitle.multiline = true;
@@ -502,46 +497,46 @@
 		{
 			ExternalInterface.call("G_PLAYER_INSTANCE.captionCallback", 4);
 		}
-		
+
 		/*解析开始时间跟结束时间*/
-        private function parseTime(str:String):uint {
-            var nRet:uint = 0;
-            if (str != "") {
-                var arr1:Array = str.split(",");
-                var nMs:uint = parseInt(arr1[1]);
-                var arr2:Array = arr1[0].split(":");
-                var nH:uint = parseInt(arr2[0]);
-                var nM:uint = parseInt(arr2[1]);
-                var nS:uint = parseInt(arr2[2]);
-                nRet += nS * 1000;
-                nRet += nM * 60 * 1000;
-                nRet += nH * 60 * 60 * 1000;
-                nRet += nMs;
-                
-            }
+		private function parseTime(str:String):uint {
+			var nRet:uint = 0;
+			if (str != "") {
+				var arr1:Array = str.split(",");
+				var nMs:uint = parseInt(arr1[1]);
+				var arr2:Array = arr1[0].split(":");
+				var nH:uint = parseInt(arr2[0]);
+				var nM:uint = parseInt(arr2[1]);
+				var nS:uint = parseInt(arr2[2]);
+				nRet += nS * 1000;
+				nRet += nM * 60 * 1000;
+				nRet += nH * 60 * 60 * 1000;
+				nRet += nMs;
+
+			}
 			trace("parseTime:" + nRet);
-            return nRet;
-        }
+			return nRet;
+		}
 		
 		/*获得对应时间点的字幕*/
-        private function getText(time:uint):String {
-            var strRet:String = "";
+		private function getText(time:uint):String {
+			var strRet:String = "";
 			var i:uint;
 			var len:uint = _arrList.length;
-            for (i = 0; i < len; i++) {
-                var obj:Object = _arrList[i];
-                if (obj.bt <= time && time <= obj.et) {
-                    strRet = obj.txt;
-                    break;
-                }
-            }
+			for (i = 0; i < len; i++) {
+				var obj:Object = _arrList[i];
+				if (obj.bt <= time && time <= obj.et) {
+					strRet = obj.txt;
+					break;
+				}
+			}
 			trace("getText:" + strRet);
-            
-            return strRet;
-        }		
 
-        public function setPlayerTime(time:Number, isStartPlayLoading:Boolean):void{
-        	if (isStartPlayLoading)
+			return strRet;
+		}		
+
+		public function setPlayerTime(time:Number, isStartPlayLoading:Boolean):void{
+			if (isStartPlayLoading)
 			{
 				_txtSubTitle.text = "";
 				return;
@@ -580,8 +575,10 @@
         }
 		
 		//flash大小改变后
-		public function handleStageResize(width:Number,height:Number,isFullScreen:Boolean = false):void
+		public function handleStageResize(isFullScreen:Boolean = false):void
 		{
+			var width:Number = stage.stageWidth;
+			var height:Number = stage.stageHeight;
 			_normalTextFormat.size = int(_fontSize / 500 * height);
 			
 			_txtSubTitle.defaultTextFormat = _normalTextFormat;

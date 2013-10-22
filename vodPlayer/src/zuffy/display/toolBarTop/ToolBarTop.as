@@ -169,8 +169,8 @@
 				return;
 			}
 			
-			//清除i帧数据
-			_target.clearSnpt();
+//mzh			清除i帧数据
+//			_target.clearSnpt();
 			
 			if (GlobalVars.instance.isStat)
 			{

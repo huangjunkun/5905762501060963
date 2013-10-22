@@ -42,6 +42,7 @@
 	import zuffy.events.*;
 	import zuffy.core.PlayerCtrl;
 	import com.Player;
+	import com.global.CheckUserManager;
 	
 	public class CtrBar extends Sprite{
 		public var _barBg:DefaultBar;          //控制条的背景
@@ -645,10 +646,8 @@
 				return;
 			}
 			
-			var isValid:Boolean = playctrlHandler.isValid;
-			if (!isValid)
-			{
-				playctrlHandler.checkIsValid();
+			if(!CheckUserManager.instance.isValid){
+				CheckUserManager.instance.checkIsValid();
 				return;
 			}
 			
@@ -1039,10 +1038,8 @@
 				return;
 			}
 			
-			var isValid:Boolean = playctrlHandler.isValid;
-			if (!isValid)
-			{
-				playctrlHandler.checkIsValid();
+			if(!CheckUserManager.instance.isValid){
+				CheckUserManager.instance.checkIsValid();
 				return;
 			}
 			
@@ -1062,10 +1059,8 @@
 				return;
 			}
 			
-			var isValid:Boolean = playctrlHandler.isValid;
-			if (!isValid)
-			{
-				playctrlHandler.checkIsValid();
+			if(!CheckUserManager.instance.isValid){
+				CheckUserManager.instance.checkIsValid();
 				return;
 			}
 			
@@ -1112,10 +1107,8 @@
 				return;
 			}
 			
-			var isValid:Boolean = playctrlHandler.isValid;
-			if (!isValid)
-			{
-				playctrlHandler.checkIsValid();
+			if(!CheckUserManager.instance.isValid){
+				CheckUserManager.instance.checkIsValid();
 				return;
 			}
 			
@@ -1412,10 +1405,8 @@
 				return;
 			}
 			
-			var isValid:Boolean = playctrlHandler.isValid;
-			if (!isValid)
-			{
-				playctrlHandler.checkIsValid();
+			if(!CheckUserManager.instance.isValid){
+				CheckUserManager.instance.checkIsValid();
 				return;
 			}
 			
@@ -1504,16 +1495,7 @@
 			
 			playctrlHandler.hideNoticeBar();
 			playctrlHandler._videoMask.showInputFace();
-			
-			/*
-			//影片停止或暂停或登陆异常，点击停止按钮显示地址输入界面
-			if (_player.isPause || _player.isStop || !playctrlHandler.isValid)
-			{
-				playctrlHandler.hideNoticeBar();
-				playctrlHandler._videoMask.showInputFace();
-			}
-			*/
-			
+						
 			if (_player.time <= 0 || _player.fixedTime == 0)
 			{
 				return;

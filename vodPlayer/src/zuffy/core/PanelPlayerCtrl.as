@@ -37,6 +37,7 @@
 	import flash.external.ExternalInterface;
 	import flash.text.TextFormat;
 	import com.serialization.json.JSON;
+	import com.global.SubtitleManager;
 
 	public class PanelPlayerCtrl extends PlayerCtrl
 	{
@@ -644,7 +645,7 @@
 					Tools.stat("b=changeSubtitle");
 				}
 				
-				saveStyle();
+				SubtitleManager.instance.saveStyle();
 			}
 			
 			//关闭面板后，如调节了时间轴，保存时间轴信息和上报
@@ -657,7 +658,7 @@
 					Tools.stat("b=changeSubtitleTime");
 				}
 				
-				saveTimeDelta();
+				SubtitleManager.instance.saveTimeDelta();
 			}
 		}
 		
@@ -931,7 +932,7 @@
 				
 				//隐藏提示
 				Tools.hideToolTip();
-				saveTimeDelta();
+				SubtitleManager.instance.saveTimeDelta();
 				
 				if (GlobalVars.instance.isStat)
 				{
@@ -986,7 +987,7 @@
 				
 				//隐藏提示
 				Tools.hideToolTip();
-				saveTimeDelta();
+				SubtitleManager.instance.saveTimeDelta();
 				
 				if (GlobalVars.instance.isStat)
 				{

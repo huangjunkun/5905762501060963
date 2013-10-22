@@ -1,8 +1,5 @@
-package zuffy.utils 
+﻿package zuffy.utils 
 {
-	import com.global.GlobalVars;
-	import com.zuffy.utils.noflux_notfromXLPan_user;
-	
 	import flash.display.Bitmap;
 	import flash.display.BitmapData;
 	import flash.display.Sprite;
@@ -14,6 +11,7 @@ package zuffy.utils
 	import flash.net.sendToURL;
 	import flash.text.StyleSheet;
 	
+	import com.global.GlobalVars;	
 	import zuffy.display.tip.ToolTip;
 
 	/**

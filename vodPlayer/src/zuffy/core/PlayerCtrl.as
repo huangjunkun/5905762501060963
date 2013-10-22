@@ -44,6 +44,7 @@
 	import zuffy.events.SetQulityEvent;
 	import zuffy.utils.Tools;
 	import zuffy.utils.JTracer;
+	import com.global.SubtitleManager;
 	
 	public class PlayerCtrl extends Sprite
 	{
@@ -89,7 +90,6 @@
 		private var _ratioVideo:Number = 0; //后台自动化预览页面浏览影片原始尺寸添加的参数
 		
 		private var _seekEnable:Boolean = true;
-		private var _subTitle:Subtitle;//字幕条
 		private var _isPressKeySeek:Boolean;//是否按住键盘左右键seek
 		private var _isNoEnoughBytes:Boolean;				//是否流量不足
 		private var _videoUrlArray:Array;
@@ -184,8 +184,7 @@
 			_player.addEventListener(Player.INIT_PAUSE, handleInitPause);
 			this.addChild(_player);
 
-			_subTitle = new Subtitle(this, tWidth, tHeight);
-			_subTitle.handleStageResize(stage.stageWidth, stage.stageHeight);
+			SubtitleManager.instance.CSubtitleMake(this, tWidth, tHeight);
 			
 			_eventCaptureScreen = new Sprite();
 			_eventCaptureScreen.graphics.clear();
@@ -238,14 +237,15 @@
 			_eventCaptureScreen.height = stage.stageHeight;
 			changePlayerSize();
 			_videoMask.setPosition();
-			_subTitle.handleStageResize(stage.stageWidth, stage.stageHeight, _isFullScreen);
+			SubtitleManager.instance.handleStageResize(_isFullScreen);
 		}
 		
 		//切换视频
 		public function exchangeVideo():void
 		{
-			//切换后，取消之前的字幕
-			_subTitle.hideCaption({surl:null, scid:null});
+			SubtitleManager.instance.exchangeVideo();
+			//清除i帧数据
+			// clearSnpt();
 		}
 
 		
@@ -467,38 +467,17 @@
 
 			stage.addEventListener(KeyboardEvent.KEY_DOWN, keyDownFunc);
 			stage.addEventListener(KeyboardEvent.KEY_UP, keyUpFunc);
-
 			stage.addEventListener(FullScreenEvent.FULL_SCREEN, on_stage_FULLSCREEN);
 
 			this.addEventListener(ControlEvent.SHOW_CTRBAR, controlEventHandler);
-			this.addEventListener(CaptionEvent.SET_STYLE, setCaptionStyle);
-			this.addEventListener(CaptionEvent.LOAD_CONTENT, loadCaptionContent);
-			this.addEventListener(CaptionEvent.HIDE_CAPTION, hideCaption);
-			this.addEventListener(CaptionEvent.SET_CONTENT, setCaptionContent);
-			this.addEventListener(CaptionEvent.SET_TIME, setCaptionTime);
+			
 		}
 
-		/**
-		 * 设置字幕的样式;
-		 */
-		private function setCaptionStyle(evt:CaptionEvent):void
-		{
-			_subTitle.setStyle(evt.info);
-		}
-
-		protected function saveTimeDelta():void{
-				_subTitle.saveTimeDelta();
-		}
-		protected function saveStyle():void{
-			_subTitle.saveStyle();
-		}
 		/**
 		 * 生成 player txt tip.
 		 */
-		protected function showPlayerTxtTips(tips:String, time:Number):void
-		{
-			if (!_playerTxtTips)
-			{
+		public function showPlayerTxtTips(tips:String, time:Number):void {
+			if (!_playerTxtTips) {
 				var filter:GlowFilter = new GlowFilter(0x000000, 1, 2, 2, 5, BitmapFilterQuality.HIGH);
 				
 				_playerTxtTips = new TextField();
@@ -532,19 +511,8 @@
 			}
 		}
 		
-		private function setCaptionContent(evt:CaptionEvent):void
-		{
-			_subTitle.setContent(evt.info.toString());
-		}
-		
-		private function loadCaptionContent(evt:CaptionEvent):void
-		{
-			_subTitle.loadContent(evt.info);
-			
-			showAutoloadTips();
-		}
-		
-		private function showAutoloadTips():void
+	
+		public function showAutoloadTips():void
 		{
 			if (!_isShowAutoloadTips && _isPlayStart && !isChangeQuality && !_player.isResetStart && GlobalVars.instance.isHasAutoloadCaption)
 			{
@@ -552,31 +520,6 @@
 				
 				showPlayerTxtTips("已自动加载在线字幕", 5000);
 			}
-		}
-		
-		private function hideCaption(evt:CaptionEvent):void
-		{
-			_subTitle.hideCaption(evt.info);
-		}
-		
-		private function setCaptionTime(evt:CaptionEvent):void
-		{
-			if (evt.info.type == "key")
-			{
-				if (_subTitle.hasSubtitle)
-				{
-					if (Number(evt.info.time) <= 0)
-					{
-						showPlayerTxtTips("字幕提前" + Math.abs(evt.info.time) / 1000 + "秒", 3000);
-					}
-					else
-					{
-						showPlayerTxtTips("字幕推迟" + Math.abs(evt.info.time) / 1000 + "秒", 3000);
-					}
-				}
-			}
-			
-			_subTitle.setTimeDelta(Number(evt.info.time));
 		}
 		
 		private function set seekEnable(enable:Boolean):void
@@ -1746,14 +1689,12 @@
 		
 		public function setSubTitleUrl(url:String):void
 		{
-			JTracer.sendMessage("PlayerCtrl -> js回调setSubTitleUrl, 设置字幕url:" + url);
-			_subTitle.loadContent({surl:url, scid:null, sname:null, isSaveAutoload:false, isRetry:false, gradeTime:180});
+		 	SubtitleManager.instance.setSubTitleUrl(url);
 		}
 		
 		public function cancelSubTitle():void
 		{
-			JTracer.sendMessage("PlayerCtrl -> js回调cancelSubTitle, 取消字幕");
-			_subTitle.hideCaption({surl:null, scid:null});
+				SubtitleManager.instance.cancelSubTitle();
 		}
 		
 		public function getDownloadSpeed():Number
@@ -1926,18 +1867,7 @@
 		{
 			return _isBuffering;
 		}
-		
-		//是否有效账户
-		public function get isValid():Boolean
-		{
-			return CheckUserManager.instance.isValid;
-		}
-		
-		public function set isValid(value:Boolean):void
-		{
-			CheckUserManager.instance.isValid = value;
-		}
-		
+				
 		//是否流量不足
 		public function get isNoEnoughBytes():Boolean
 		{
@@ -2017,21 +1947,6 @@
 			
 			_noticeBar.setContent("当前网速较慢，建议暂停缓冲一会再播放", false, 12);
 			_noticeBar.setRightContent("<a href='event:hideLowSpeedTips'>不再提示</a>");
-			
-			/*
-			if (globalVars.movieFormat == "c")
-			{
-				//_noticeBar.setContent("当前网速较慢，建议您切换到 <a href='event:backToGaoQing'>高清</a>", false, 12);
-				_noticeBar.setContent("当前网速较慢，建议暂停缓冲一会再播放", false, 12);
-				_noticeBar.setRightContent("<a href='event:hideLowSpeedTips'>不再提示</a>");
-			}
-			else if (globalVars.movieFormat == "g")
-			{
-				//_noticeBar.setContent("当前网速较慢，建议您切换到 <a href='event:backToLiuChang'>流畅</a>", false, 12);
-				_noticeBar.setContent("当前网速较慢，建议暂停缓冲一会再播放", false, 12);
-				_noticeBar.setRightContent("<a href='event:hideLowSpeedTips'>不再提示</a>");
-			}
-			*/
 		}
 		protected function mouseWheel(delta:Number):void{
 			if( _isFullScreen )

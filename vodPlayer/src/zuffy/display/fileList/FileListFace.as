@@ -691,8 +691,6 @@
 		{
 			//切换视频
 			_mainMc.exchangeVideo();
-			//清除i帧数据
-			_mainMc.clearSnpt();
 			
 			var i:*;
 			for (i in obj)
