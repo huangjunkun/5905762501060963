@@ -1,20 +1,44 @@
 ﻿package com
 {
-	import flash.display.*;
-	import flash.events.*;
-	import flash.external.*;
-	import flash.geom.*;
-	import flash.media.*;
-	import flash.net.*;
-	import flash.system.*;
-	import flash.utils.*;
-	import com.common.*;
-	import com.slice.*;
-	import com.global.*;
+	import com.common.GetGdlCodeSocket;
+	import com.common.GetVodCodeSocket;
+	import com.common.GetVodSocket;
+	import com.common.JTracer;
+	import com.common.StringUtil;
+	import com.common.Tools;
+	import com.global.CheckUserManager;
+	import com.global.GlobalVars;
 	import com.serialization.json.JSON;
-	import zuffy.events.*;
-	import zuffy.display.statuMenu.VideoMask;
+	import com.slice.SingleSocket;
+	import com.slice.SliceStreamBytes;
+	import com.slice.StreamList;
+	import com.slice.StreamMetaData;
+	
+	import flash.display.Sprite;
+	import flash.events.Event;
+	import flash.events.IOErrorEvent;
+	import flash.events.NetStatusEvent;
+	import flash.events.SecurityErrorEvent;
+	import flash.events.TimerEvent;
+	import flash.external.ExternalInterface;
+	import flash.media.SoundTransform;
+	import flash.media.Video;
+	import flash.net.NetConnection;
+	import flash.net.NetStream;
+	import flash.net.NetStreamAppendBytesAction;
+	import flash.net.SharedObject;
+	import flash.net.URLLoader;
+	import flash.net.URLRequest;
+	import flash.utils.ByteArray;
+	import flash.utils.Timer;
+	import flash.utils.getTimer;
+	
 	import zuffy.core.PlayerCtrl;
+	import zuffy.display.statuMenu.VideoMask;
+	import zuffy.events.ControlEvent;
+	import zuffy.events.PlayEvent;
+	import zuffy.events.SetQulityEvent;
+	import zuffy.events.sizeEvent;
 	
 	public class Player extends Sprite
 	{
@@ -854,7 +878,7 @@
 			if (_timeDownload > 5 * 60 * 60)
 			{
 				_timeDownload = 0;
-				main_mc.isValid = false;
+				CheckUserManager.instance.isValid = false;
 			}
 			
 			//系统时间

@@ -1,47 +1,25 @@
 ﻿package zuffy.core
 {
 	import com.Player;
-	import com.common.Tools;
 	import com.common.Cookies;
-	import com.common.JTracer;
-	import com.slice.StreamList;
+	import com.global.CheckUserManager;
 	import com.global.GlobalVars;
 	import com.serialization.json.JSON;
-
-	import zuffy.display.CtrBar;
-	import zuffy.display.MouseControl;
-	import zuffy.display.notice.NoticeBar;
-	import zuffy.display.notice.bufferTip;
-	import zuffy.display.subtitle.Subtitle;
-	import zuffy.display.statuMenu.VideoMask;
-	import zuffy.ctr.contextMenu.CreateContextMenu;
+	import com.slice.StreamList;
 	
-	import zuffy.events.PlayEvent;
-	import zuffy.events.CaptionEvent;
-	import zuffy.events.ControlEvent;
-	import zuffy.events.SetQulityEvent;
-	
-	import flash.display.Bitmap;
-	import flash.display.BitmapData;
-	import flash.display.Loader;
 	import flash.display.Sprite;
 	import flash.display.StageAlign;
 	import flash.display.StageDisplayState;
 	import flash.display.StageScaleMode;
 	import flash.events.Event;
 	import flash.events.FullScreenEvent;
-	import flash.events.IOErrorEvent;
 	import flash.events.KeyboardEvent;
 	import flash.events.MouseEvent;
-	import flash.events.SecurityErrorEvent;
 	import flash.events.TimerEvent;
 	import flash.external.ExternalInterface;
 	import flash.filters.BitmapFilterQuality;
 	import flash.filters.GlowFilter;
-	import flash.net.URLLoader;
-	import flash.net.URLRequest;
 	import flash.system.Capabilities;
-	import flash.system.LoaderContext;
 	import flash.system.Security;
 	import flash.text.TextField;
 	import flash.text.TextFormat;
@@ -52,7 +30,20 @@
 	import flash.utils.getTimer;
 	import flash.utils.setInterval;
 	import flash.utils.setTimeout;
-	
+
+	import zuffy.ctr.contextMenu.CreateContextMenu;
+	import zuffy.display.CtrBar;
+	import zuffy.display.MouseControl;
+	import zuffy.display.notice.NoticeBar;
+	import zuffy.display.notice.bufferTip;
+	import zuffy.display.statuMenu.VideoMask;
+	import zuffy.display.subtitle.Subtitle;
+	import zuffy.events.CaptionEvent;
+	import zuffy.events.ControlEvent;
+	import zuffy.events.PlayEvent;
+	import zuffy.events.SetQulityEvent;
+	import zuffy.utils.Tools;
+	import zuffy.utils.JTracer;
 	
 	public class PlayerCtrl extends Sprite
 	{
@@ -100,10 +91,6 @@
 		private var _seekEnable:Boolean = true;
 		private var _subTitle:Subtitle;//字幕条
 		private var _isPressKeySeek:Boolean;//是否按住键盘左右键seek
-		private var _checkUserLoader:URLLoader;
-		private var _checkFlowLoader:URLLoader;
-		private var _snptLoader:Loader;
-		private var _isValid:Boolean = true;				//登陆是否有效，默认有效
 		private var _isNoEnoughBytes:Boolean;				//是否流量不足
 		private var _videoUrlArray:Array;
 		private var _isFirstTips:Boolean = true;			//是否第一次提示上次播放时间点或字幕提示
@@ -178,16 +165,6 @@
 			initOther();
 			
 			initStageEvent();
-
-			_checkUserLoader = new URLLoader();
-			_checkUserLoader.addEventListener(Event.COMPLETE, onCheckUserComplete);
-			_checkUserLoader.addEventListener(IOErrorEvent.IO_ERROR, onCheckUserIOError);
-			_checkUserLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onCheckUserSecurityError);
-			
-			_checkFlowLoader = new URLLoader();
-			_checkFlowLoader.addEventListener(Event.COMPLETE, onCheckFlowComplete);
-			_checkFlowLoader.addEventListener(IOErrorEvent.IO_ERROR, onCheckFlowIOError);
-			_checkFlowLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onCheckFlowSecurityError);
 
 		}
 		//显示系统时间
@@ -271,23 +248,10 @@
 			_subTitle.hideCaption({surl:null, scid:null});
 		}
 
-		//登陆异常
-		public function showInvalidLoginLogo():void
-		{
-			_isValid = false;
-			_isStopNormal = false;
-			_isShowStopFace = false;
-			
-			//登陆异常时，设置开播时间为当前时间，刷新页面时从当前点开播
-			_player.startPosition = _player.time;
-			
-			_ctrBar.dispatchStop();
-			_videoMask.showErrorNotice(VideoMask.invalidLogin);
-		}
+		
 		
 		//播放异常
-		public function showPlayError(errorCode:String):void
-		{
+		public function showPlayError(errorCode:String):void {
 			_isStopNormal = false;
 			_isShowStopFace = false;
 			
@@ -295,133 +259,7 @@
 			_videoMask.showErrorNotice(VideoMask.playError, errorCode);
 		}
 		
-		public function checkIsValid():void
-		{
-			ExternalInterface.call("XL_CLOUD_FX_INSTANCE.uUpdate");
-			
-			Tools.setUserInfo("sessionid", ExternalInterface.call("G_PLAYER_INSTANCE.getParamInfo", "sessionid"));
-			var userid:String = Tools.getUserInfo("userid");
-			var sessionid:String = Tools.getUserInfo("sessionid");
-			var ip:String = "1.2.3.4";
-			var from:String = Tools.getUserInfo("from");
-			var url:String = GlobalVars.instance.url_check_account + "?userid=" + userid + "&sessionid=" + sessionid + "&ip=" + ip + "&from=" + from + "&r=" + Math.random();
-			
-			JTracer.sendMessage("PlayerCtrl -> check is valid start, url:" + url);
-			
-			var req:URLRequest = new URLRequest(url);
-			_checkUserLoader.load(req);
-		}
 		
-		private function onCheckUserComplete(evt:Event):void
-		{
-			//4-sessionid已失效, 5-sessionid与userid不对应
-			var resultStr:String = evt.target.data;
-			var resultObj:Object = com.serialization.json.JSON.deserialize(resultStr);
-			var result:Number = resultObj.result;
-			JTracer.sendMessage("PlayerCtrl -> onCheckUserComplete, check is valid complete, result:" + result);
-			
-			if (result == 4 || result == 5)
-			{
-				showInvalidLoginLogo();
-			}
-			else
-			{
-				_isValid = true;
-				_ctrBar.dispatchPlay();
-			}
-		}
-		
-		private function onCheckUserIOError(evt:IOErrorEvent):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> onCheckUserIOError, check is valid IOError");
-			_isValid = true;
-			_ctrBar.dispatchPlay();
-		}
-		
-		private function onCheckUserSecurityError(evt:SecurityErrorEvent):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> onCheckUserSecurityError, check is valid SecurityError");
-			_isValid = true;
-			_ctrBar.dispatchPlay();
-		}
-				
-		private function onCheckFlowComplete(evt:Event):void
-		{
-			var jsonStr:String = evt.target.data;
-			JTracer.sendMessage("PlayerCtrl -> onCheckFlowComplete, jsonStr:" + jsonStr);
-			var jsonObj:Object = com.serialization.json.JSON.deserialize(jsonStr);
-			switch(jsonObj.result)
-			{
-				case "0":
-					//成功
-					_remainTimes = jsonObj.remain;
-					_expiresTime = jsonObj.vtime;
-					_isFlowChecked = true;
-					
-					//检测是否应该暂停影片播放
-					checkIsShouldPause();
-					break;
-				case "1":
-					//请求参数错误
-					break;
-				case "2":
-					//数据库异常
-					showInvalidLoginLogo();
-					break;
-			}
-		}
-		
-		private function onCheckFlowIOError(evt:IOErrorEvent):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> onCheckFlowIOError");
-		}
-		
-		private function onCheckFlowSecurityError(evt:SecurityErrorEvent):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> onCheckFlowSecurityError");
-		}
-		
-		private function checkIsShouldPause():void
-		{
-			var vodPermit:Number = Number(Tools.getUserInfo("vodPermit"));
-			JTracer.sendMessage('PlayerCtrl -> checkIsShouldPause vodPermit:'+vodPermit);
-			if ((vodPermit == 6 || vodPermit == 7 || vodPermit == 8 || vodPermit == 9 || vodPermit == 10 || vodPermit == 11) && Tools.getUserInfo("from") != GlobalVars.instance.fromXLPan)
-			{
-				if (_isPlayStart && _isFlowChecked && _isFirstRemainTips)
-				{
-					_isFirstRemainTips = false;
-					//显示了时长提示，不再显示上次播放时间点和字幕提示
-					_isFirstTips = false;
-					JTracer.sendMessage('PlayerCtrl -> checkIsShouldPause _remainTimes:'+_remainTimes);
-					if (_remainTimes <= 0)
-					{
-						//无时长普通会员开播1秒后停止
-						setTimeout(tryPlayEnded, 1000, 0);
-					}
-					else
-					{
-						var needTimes:Number = _player.totalTime - _player.getFirstStartTime();
-						var timesStr:String = Tools.calculateTimes(_remainTimes);
-						var expireStr:String = _remainTimes == 0 ? "" : "（" + Tools.transDate(_expiresTime) + "前有效）";
-						if (_remainTimes < needTimes)
-						{
-							//时长不足，提示用户
-							_noticeBar.setContent("您的可播放时长剩余" + timesStr + expireStr + "，迅雷白金会员不限时长，<a href='event:buyVIP13'>立即开通</a>", false, 12);
-							
-							JTracer.sendMessage("PlayerCtrl -> checkIsShouldPause, 时长不足的提醒, ygcid:" + Tools.getUserInfo("ygcid") + ", userid:" + Tools.getUserInfo("userid") + ", remain:" + _remainTimes + ", need:" + needTimes);
-							Tools.stat("f=fluxlacktips&gcid=" + Tools.getUserInfo("ygcid") + "&left=" + _remainTimes + "&need=" + needTimes);
-						}
-						else
-						{
-							//时长充足，提示用户
-							_noticeBar.setContent("您的可播放时长剩余" + timesStr + expireStr + "，迅雷白金会员不限时长，<a href='event:buyVIP13'>立即开通</a>", false, 12);
-							
-							JTracer.sendMessage("PlayerCtrl -> checkIsShouldPause, 时长充足的提醒, ygcid:" + Tools.getUserInfo("ygcid") + ", userid:" + Tools.getUserInfo("userid") + ", remain:" + _remainTimes + ", need:" + needTimes);
-						}
-					}
-				}
-			}
-		}
 		
 		protected function onCloseAddBytesFace(evt:Event):void{
 			if (!_player.isStop)
@@ -463,9 +301,139 @@
 			Tools.stat("f=show_play_end&playtype=" + playtype);
 			_noticeBar.hideNoticeBar();
 		}
-		
-		protected function initOther():void{
+
+
+
+		// 登陆异常回调函数
+		public function showInvalidLoginLogo():void {
+			CheckUserManager.instance.isValid = false;
+			_isStopNormal = false;
+			_isShowStopFace = false;
 			
+			// 登陆异常时，设置开播时间为当前时间，刷新页面时从当前点开播
+			_player.startPosition = _player.time;
+			
+			_ctrBar.dispatchStop();
+			_videoMask.showErrorNotice(VideoMask.invalidLogin);
+		}
+
+		// 监测播放权限
+		private function checkIsShouldPause():void {
+			
+			if (Tools.normalUser()) {
+				if (_isPlayStart && _isFlowChecked && _isFirstRemainTips)
+				{
+					_isFirstRemainTips = false;
+					//显示了时长提示，不再显示上次播放时间点和字幕提示
+					_isFirstTips = false;
+					JTracer.sendMessage('PlayerCtrl -> check Is Should Pause _remainTimes:'+_remainTimes);
+					if (_remainTimes <= 0)
+					{
+						//无时长普通会员开播1秒后停止
+						setTimeout(tryPlayEnded, 1000, 0);
+					}
+					else
+					{
+						var needTimes:Number = _player.totalTime - _player.getFirstStartTime();
+						var timesStr:String = Tools.calculateTimes(_remainTimes);
+						var expireStr:String = _remainTimes == 0 ? "" : "（" + Tools.transDate(_expiresTime) + "前有效）";
+						if (_remainTimes < needTimes)
+						{
+							//时长不足，提示用户
+							_noticeBar.setContent("您的可播放时长剩余" + timesStr + expireStr + "，迅雷白金会员不限时长，<a href='event:buyVIP13'>立即开通</a>", false, 12);
+							
+							JTracer.sendMessage("PlayerCtrl -> check Is Should Pause, 时长不足的提醒, ygcid:" + Tools.getUserInfo("ygcid") + ", userid:" + Tools.getUserInfo("userid") + ", remain:" + _remainTimes + ", need:" + needTimes);
+							Tools.stat("f=fluxlacktips&gcid=" + Tools.getUserInfo("ygcid") + "&left=" + _remainTimes + "&need=" + needTimes);
+						}
+						else
+						{
+							//时长充足，提示用户
+							_noticeBar.setContent("您的可播放时长剩余" + timesStr + expireStr + "，迅雷白金会员不限时长，<a href='event:buyVIP13'>立即开通</a>", false, 12);
+							
+							JTracer.sendMessage("PlayerCtrl -> check Is Should Pause, 时长充足的提醒, ygcid:" + Tools.getUserInfo("ygcid") + ", userid:" + Tools.getUserInfo("userid") + ", remain:" + _remainTimes + ", need:" + needTimes);
+						}
+					}
+				}
+			}
+		}
+		protected function initOther():void {
+
+			CheckUserManager.instance.checkUserCompleteHandler = function checkUserCompleteHandler(resultStr:String):void {
+				// 4-sessionid已失效, 5-sessionid与userid不对应
+				var resultObj:Object = com.serialization.json.JSON.deserialize(resultStr);
+				var result:Number = resultObj.result;
+				JTracer.sendMessage("PlayerCtrl -> onCheckUserComplete, check is valid complete, result:" + result);
+			
+				if (result == 4 || result == 5)
+				{
+					showInvalidLoginLogo();
+				}
+				else
+				{
+					CheckUserManager.instance.isValid = true;
+					_ctrBar.dispatchPlay();
+				}
+			}
+
+			CheckUserManager.instance.checkUserErrorHandler = function checkUserErrorHandler():void {
+				JTracer.sendMessage("PlayerCtrl -> onCheckUserIOError, check is valid IOError");
+				_ctrBar.dispatchPlay();
+			}
+
+			CheckUserManager.instance.checkFlowCompleteHandler = function checkFlowCompleteHandler(resultStr:String):void {
+				JTracer.sendMessage("PlayerCtrl -> onCheckFlowComplete, jsonStr:" + resultStr);
+				var jsonObj:Object = com.serialization.json.JSON.deserialize(resultStr);
+				switch(jsonObj.result)
+				{
+					case "0":
+						//成功
+						_remainTimes = jsonObj.remain;
+						_expiresTime = jsonObj.vtime;
+						_isFlowChecked = true;
+						
+						//检测是否应该暂停影片播放
+						checkIsShouldPause();
+						break;
+					case "1":
+						//请求参数错误
+						break;
+					case "2":
+						//数据库异常
+						showInvalidLoginLogo();
+						break;
+				}
+			}
+
+			CheckUserManager.instance.checkSuccess = function checkSuccess():void {
+				_isDoubleClick = false;
+				var _time:Timer;
+				if (stage.frameRate == 10) {
+					_time = new Timer(700, 1);
+				}else{
+					_time = new Timer(260, 1);
+				}
+				_time.addEventListener(TimerEvent.TIMER, function(eve:TimerEvent):void {
+					if (!_isDoubleClick) {
+						ExternalInterface.call("flv_playerEvent", "onClick");
+						if (!_player.isPause)
+						{
+							if (_player.isStartPause)
+							{
+								_player.isStartPause = false;
+								_player.dispatchEvent(new PlayEvent(PlayEvent.PLAY_4_STAGE));
+							}
+							else
+							{
+								_player.dispatchEvent(new PlayEvent(PlayEvent.PAUSE_4_STAGE));
+							}
+						}else{
+							_player.dispatchEvent(new PlayEvent(PlayEvent.PLAY_4_STAGE));
+						}
+					}
+				});
+				_time.start();
+			}
+
 		}
 
 		/**
@@ -738,10 +706,8 @@
 					
 					JTracer.sendMessage("PlayerCtrl -> playEventHandler, PlayEvent.PlayStart, set bufferType:" + GlobalVars.instance.bufferType);
 					
-					//没流量的用户，网盘用户不检测
-					var vodPermit:Number = Number(Tools.getUserInfo("vodPermit"));
-					if ((vodPermit == 7 || vodPermit == 9 || vodPermit == 11) && Tools.getUserInfo("from") != GlobalVars.instance.fromXLPan)
-					{
+					//没流量的用户，网盘用户不检测					
+					if(Tools.noflux_notfromXLPan_user()){
 						_remainTimes = 0;
 						_isFlowChecked = true;
 					}
@@ -856,50 +822,13 @@
 				ExternalInterface.call('function(){window.location.reload();}')
 				return;
 			}
-			checkIsValid();
+			CheckUserManager.instance.checkIsValid();
 		}
 		
 		private function onClickHandle(e:MouseEvent):void
 		{
-			if (_isValid)
-			{
-				checkSuccess();
-			}
-			else
-			{
-				checkIsValid();
-			}
-		}
-		
-		private function checkSuccess():void
-		{
-			_isDoubleClick = false;
-			var _time:Timer;
-			if (stage.frameRate == 10) {
-				_time = new Timer(700, 1);
-			}else{
-				_time = new Timer(260, 1);
-			}
-			_time.addEventListener(TimerEvent.TIMER, function(eve:TimerEvent):void {
-				if (!_isDoubleClick) {
-					ExternalInterface.call("flv_playerEvent", "onClick");
-					if (!_player.isPause)
-					{
-						if (_player.isStartPause)
-						{
-							_player.isStartPause = false;
-							_player.dispatchEvent(new PlayEvent(PlayEvent.PLAY_4_STAGE));
-						}
-						else
-						{
-							_player.dispatchEvent(new PlayEvent(PlayEvent.PAUSE_4_STAGE));
-						}
-					}else{
-						_player.dispatchEvent(new PlayEvent(PlayEvent.PLAY_4_STAGE));
-					}
-				}
-			});
-			_time.start();
+			CheckUserManager.instance.checkIsValid();
+			
 		}
 		
 		protected function keyUpFunc(e:KeyboardEvent):void
@@ -1389,16 +1318,10 @@
 			_player.originGdlUrl = arr[0].url;
 			
 			_isPlayStart = false;
-			_isFlowChecked = false;
-			
-			//有流量用户检测是否有足够时长，网盘用户不检测
-			var vodPermit:Number = Number(Tools.getUserInfo("vodPermit"));
-			if ((vodPermit == 6 || vodPermit == 8 || vodPermit == 10) && Tools.getUserInfo("from") != GlobalVars.instance.fromXLPan)
-			{
-				var req:URLRequest = new URLRequest(GlobalVars.instance.url_check_flow + "userid/" + Tools.getUserInfo("userid") + "?t=" + new Date().time);
-				JTracer.sendMessage("PlayerCtrl -> flv_setPlayeUrl, 查询时长, url:" + req.url);
-				_checkFlowLoader.load(req);
-			}
+
+			// 发出检测流量的请求
+			_isFlowChecked = false;			
+			CheckUserManager.instance.checkFlow();
 			
 			//播放新地址时，初始化输入地址播放面板
 			if (!isChangeQuality)
@@ -1434,14 +1357,9 @@
 			_player.hasNextStream = true;
 			Tools.getFormat();
 
-			var isUseP2P:Boolean =  false;		
-
-			JTracer.sendMessage('is ios page :' + GlobalVars.instance.isMacWebPage)
-			if(Player.p2p_type == 'p2s' || GlobalVars.instance.isMacWebPage || !isUseP2P){
-				GlobalVars.instance.isXLNetStreamValid = 0;
-				_player.setPlayUrl(arr);
-				return;
-			}
+			GlobalVars.instance.isXLNetStreamValid = 0;
+			_player.setPlayUrl(arr);
+			
 			
 		}
 
@@ -2012,12 +1930,12 @@
 		//是否有效账户
 		public function get isValid():Boolean
 		{
-			return _isValid;
+			return CheckUserManager.instance.isValid;
 		}
 		
 		public function set isValid(value:Boolean):void
 		{
-			_isValid = value;
+			CheckUserManager.instance.isValid = value;
 		}
 		
 		//是否流量不足

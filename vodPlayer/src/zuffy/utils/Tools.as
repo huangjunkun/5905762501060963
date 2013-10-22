@@ -1,6 +1,7 @@
 package zuffy.utils 
 {
 	import com.global.GlobalVars;
+	import com.zuffy.utils.noflux_notfromXLPan_user;
 	
 	import flash.display.Bitmap;
 	import flash.display.BitmapData;
@@ -14,6 +15,7 @@ package zuffy.utils
 	import flash.text.StyleSheet;
 	
 	import zuffy.display.tip.ToolTip;
+
 	/**
 	 * ...
 	 * @author hwh
@@ -309,6 +311,26 @@ package zuffy.utils
 		{
 			return ToolTip.width;
 		}
+		
+
+
+
+		// ========== handy functions... ========== 
+
+		public static function noflux_notfromXLPan_user():Boolean {
+			var vodPermit:Number = Number(getUserInfo("vodPermit"));
+			return (vodPermit == 7 || vodPermit == 9 || vodPermit == 11) && (getUserInfo("from") != GlobalVars.instance.fromXLPan)
+		}
+
+		// 普通会员
+		public static function normalUser():Boolean {
+			var vodPermit:Number = Number(getUserInfo("vodPermit"));
+			JTracer.sendMessage('PlayerCtrl -> check Is Should Pause vodPermit:'+vodPermit);
+						
+			return (vodPermit == 6 || vodPermit == 7 || vodPermit == 8 || vodPermit == 9 || vodPermit == 10 || vodPermit == 11) && getUserInfo("from") != GlobalVars.instance.fromXLPan;
+		}
+
+		
 	}
 
 }

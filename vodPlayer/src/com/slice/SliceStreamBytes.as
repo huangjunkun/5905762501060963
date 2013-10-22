@@ -205,44 +205,6 @@
 				switch(obj.result)
 				{
 					case "0":
-						//成功
-						/*
-						if (obj.capacity == 0 && obj.remain == 0)
-						{
-							//重复扣费
-							return;
-						}
-						
-						var remainTimes:Number = obj.remain;
-						var needTimes:Number = _totalTime - _player.time;
-						
-						var timesStr:String = Tools.calculateTimes(remainTimes);
-						if (remainTimes < needTimes)
-						{
-							//第一次扣费时，时长不足，提示用户
-							if (_isFirstFee)
-							{
-								_isFirstFee = false;
-								
-								_player.main_mc.flv_setNoticeMsg("您的播放时长剩余" + timesStr + "（12.03前有效），迅雷白金会员不限时长，<a href='event:buyVIP13'>加5元升级为白金</a>", false, 12);
-								
-								JTracer.sendMessage("SliceStreamBytes -> 时长不足的提醒, ygcid:" + Tools.getUserInfo("ygcid") + ", userid:" + Tools.getUserInfo("userid") + ", remain:" + remainTimes + ", need:" + needTimes);
-								Tools.stat("f=fluxlacktips&gcid=" + Tools.getUserInfo("ygcid") + "&left=" + remainTimes + "&need=" + needTimes);
-							}
-						}
-						else
-						{
-							//第一次扣费时，时长充足，提示用户
-							if (_isFirstFee)
-							{
-								_isFirstFee = false;
-								
-								_player.main_mc.flv_setNoticeMsg("您的播放时长剩余" + timesStr + "（12.03前有效），迅雷白金会员不限时长，<a href='event:buyVIP13'>加5元升级为白金</a>", false, 12);
-								
-								JTracer.sendMessage("SliceStreamBytes -> 时长充足的提醒, ygcid:" + Tools.getUserInfo("ygcid") + ", userid:" + Tools.getUserInfo("userid") + ", remain:" + remainTimes + ", need:" + needTimes);
-							}
-						}
-						*/
 						break;
 					case "1":
 						//请求参数错误
