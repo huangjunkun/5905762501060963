@@ -45,8 +45,10 @@
 	import zuffy.utils.JTracer;
 	import zuffy.ctr.manager.SubtitleManager;
 	
-	public class PlayerCtrl extends Sprite
-	{
+	// 字幕接口
+	import zuffy.interfaces.ICaption;
+
+	public class PlayerCtrl extends Sprite implements ICaption {
 		private const NORMAL_PROGRESSBAR_HEIGTH:uint = 7;
 		private const SMALL_PROGRESSBAR_HEIGTH:uint = 3;
 
@@ -97,7 +99,6 @@
 		private var _isStopNormal:Boolean;					//是否正常停止
 		private var _isFirstOnplaying:Boolean = true;		//是否第一次触发onplaying
 		private var _isReported:Boolean = false;			//是否已经上报版本号或用户域名
-		private var _playerTxtTips:TextField;				//左上角影片正在播放提示文字
 		private var _playerTxtTipsID:uint;
 		private var _remainTimes:Number;					//剩余时长
 		private var _expiresTime:Number;					//过期时间
@@ -472,55 +473,6 @@
 			
 		}
 
-		/**
-		 * 生成 player txt tip.
-		 */
-		public function showPlayerTxtTips(tips:String, time:Number):void {
-			if (!_playerTxtTips) {
-				var filter:GlowFilter = new GlowFilter(0x000000, 1, 2, 2, 5, BitmapFilterQuality.HIGH);
-				
-				_playerTxtTips = new TextField();
-				_playerTxtTips.selectable = false;
-				_playerTxtTips.textColor = 0xFEFE01;
-				_playerTxtTips.filters = [filter];
-				_playerTxtTips.x = 15;
-				_playerTxtTips.y = 25;
-				addChild(_playerTxtTips);
-			}
-			
-			var tf:TextFormat = new TextFormat("宋体");
-			
-			_playerTxtTips.text = tips;
-			_playerTxtTips.width = _playerTxtTips.textWidth + 10;
-			_playerTxtTips.setTextFormat(tf);
-			
-			clearTimeout(_playerTxtTipsID);
-			_playerTxtTipsID = setTimeout(hidePlayerTxtTips, time);
-		}
-		
-		/**
-		 * 移除 player txt tip.
-		 */
-		protected function hidePlayerTxtTips():void
-		{
-			if (_playerTxtTips)
-			{
-				removeChild(_playerTxtTips);
-				_playerTxtTips = null;
-			}
-		}
-		
-	
-		public function showAutoloadTips():void
-		{
-			if (!_isShowAutoloadTips && _isPlayStart && !isChangeQuality && !_player.isResetStart && GlobalVars.instance.isHasAutoloadCaption)
-			{
-				_isShowAutoloadTips = true;
-				
-				showPlayerTxtTips("已自动加载在线字幕", 5000);
-			}
-		}
-		
 		private function set seekEnable(enable:Boolean):void
 		{
 			this._seekEnable = enable;
@@ -1889,15 +1841,6 @@
 			_isStopNormal = boo;
 		}
 
-		// 视频处于播放状态
-		public function get videoIsPlaying():Boolean {
-			return !(_player.isPause || _player.isStop || isBuffering);
-		}
-		
-		public function get videoTime():Number{
-			return _player.time;
-		}
-
 		//影片是否已经开播
 		public function get isPlayStart():Boolean
 		{
@@ -2013,10 +1956,77 @@
 		}
 		
 
-		public function get isStartPlayLoading():Boolean
-		{
+		/*==============================================
+			implements icaption method.
+		==============================================*/
+
+		private var _playerTxtTips:TextField;	//左上角影片正在播放提示文字
+
+		public function get isStartPlayLoading():Boolean {
 			return _videoMask.isStartPlayLoading;
 		}
+
+		public function get videoIsPlaying():Boolean {
+			return !(_player.isPause || _player.isStop || isBuffering);
+		}
 		
+		public function get videoTime():Number {
+			return _player.time;
+		}
+		/**
+		 * 显示自动加载字幕的信息.
+		 */
+		public function showAutoloadTips():void
+		{
+			if (!_isShowAutoloadTips && _isPlayStart && !isChangeQuality && !_player.isResetStart && GlobalVars.instance.isHasAutoloadCaption)
+			{
+				_isShowAutoloadTips = true;
+				
+				showPlayerTxtTips("已自动加载在线字幕", 5000);
+			}
+		}
+
+		/**
+		 * 生成 player txt tip.
+		 */
+		public function showPlayerTxtTips(tips:String, time:Number):void {
+			if (!_playerTxtTips) {
+				var filter:GlowFilter = new GlowFilter(0x000000, 1, 2, 2, 5, BitmapFilterQuality.HIGH);
+				
+				_playerTxtTips = new TextField();
+				_playerTxtTips.selectable = false;
+				_playerTxtTips.textColor = 0xFEFE01;
+				_playerTxtTips.filters = [filter];
+				_playerTxtTips.x = 15;
+				_playerTxtTips.y = 25;
+				addChild(_playerTxtTips);
+			}
+			
+			var tf:TextFormat = new TextFormat("宋体");
+			
+			_playerTxtTips.text = tips;
+			_playerTxtTips.width = _playerTxtTips.textWidth + 10;
+			_playerTxtTips.setTextFormat(tf);
+			
+			clearTimeout(_playerTxtTipsID);
+			_playerTxtTipsID = setTimeout(__hidePlayerTxtTips, time);
+		}
+
+		/**
+		 * 私有方法
+		 * 移除 player txt tip.
+		 */
+		private function __hidePlayerTxtTips():void
+		{
+			if (_playerTxtTips)
+			{
+				removeChild(_playerTxtTips);
+				_playerTxtTips = null;
+			}
+			clearTimeout(_playerTxtTipsID);
+		}
+
+
+
 	}
 }

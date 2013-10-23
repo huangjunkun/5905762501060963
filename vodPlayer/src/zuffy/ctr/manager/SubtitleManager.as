@@ -2,11 +2,12 @@
 	import zuffy.core.PlayerCtrl;
 	import zuffy.display.subtitle.Subtitle;
 	import zuffy.events.CaptionEvent;
+	import zuffy.interfacs.ICaption;
 	import com.common.JTracer;
 	
 	public class SubtitleManager {
 		private var _subTitle:Subtitle;					//字幕条
-		private var mainCtrl:PlayerCtrl;
+		private var mainCtrl:ICaption;
 
 		public function SubtitleManager (){
 
@@ -23,7 +24,7 @@
 			return _instance;
 		}
 
-		public function CSubtitleMake(p:PlayerCtrl, w:Number, h:Number):Subtitle {
+		public function CSubtitleMake(p:ICaption, w:Number, h:Number):Subtitle {
 			mainCtrl = p;
 
 			_subTitle = new Subtitle(w, h);
