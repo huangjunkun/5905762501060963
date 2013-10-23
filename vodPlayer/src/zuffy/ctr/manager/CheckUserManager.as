@@ -1,4 +1,4 @@
-package com.global{
+﻿package zuffy.ctr.manager{
 	import com.common.JTracer;
 	import com.common.Tools;
 	
@@ -8,6 +8,7 @@ package com.global{
 	import flash.net.URLLoader;
 	import flash.net.URLRequest;
 	import flash.external.ExternalInterface;
+	import com.global.GlobalVars;
 	
 	public class CheckUserManager{
 		

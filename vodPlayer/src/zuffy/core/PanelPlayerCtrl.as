@@ -37,7 +37,7 @@
 	import flash.external.ExternalInterface;
 	import flash.text.TextFormat;
 	import com.serialization.json.JSON;
-	import com.global.SubtitleManager;
+	import zuffy.ctr.manager.SubtitleManager;
 
 	public class PanelPlayerCtrl extends PlayerCtrl
 	{

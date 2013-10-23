@@ -1,4 +1,4 @@
-﻿package com.global{
+﻿package zuffy.ctr.manager{
 	import zuffy.core.PlayerCtrl;
 	import zuffy.display.subtitle.Subtitle;
 	import zuffy.events.CaptionEvent;

@@ -6,7 +6,7 @@
 	import com.common.JTracer;
 	import com.common.StringUtil;
 	import com.common.Tools;
-	import com.global.CheckUserManager;
+	import zuffy.ctr.manager.CheckUserManager;
 	import com.global.GlobalVars;
 	import com.serialization.json.JSON;
 	import com.slice.SingleSocket;

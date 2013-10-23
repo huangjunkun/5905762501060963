@@ -2,7 +2,7 @@
 {
 	import com.Player;
 	import com.common.Cookies;
-	import com.global.CheckUserManager;
+	import zuffy.ctr.manager.CheckUserManager;
 	import com.global.GlobalVars;
 	import com.serialization.json.JSON;
 	import com.slice.StreamList;
@@ -43,7 +43,7 @@
 	import zuffy.events.SetQulityEvent;
 	import zuffy.utils.Tools;
 	import zuffy.utils.JTracer;
-	import com.global.SubtitleManager;
+	import zuffy.ctr.manager.SubtitleManager;
 	
 	public class PlayerCtrl extends Sprite
 	{

@@ -42,7 +42,7 @@
 	import zuffy.events.*;
 	import zuffy.core.PlayerCtrl;
 	import com.Player;
-	import com.global.CheckUserManager;
+	import zuffy.ctr.manager.CheckUserManager;
 	
 	public class CtrBar extends Sprite{
 		public var _barBg:DefaultBar;          //控制条的背景
