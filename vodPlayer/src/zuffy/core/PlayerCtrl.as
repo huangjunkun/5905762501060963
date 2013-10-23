@@ -644,6 +644,7 @@
 					_isBuffering = false;
 					break;
 				case 'Progress':
+					JTracer.sendMessage('inprogress..')
 					if (_player.streamInPlay) {
 						//hwh
 						var numProgress:Number;
@@ -659,7 +660,7 @@
 							numProgress = _player.streamInPlay.bufferLength / _player.streamInPlay.bufferTime;
 							
 						}
-						
+						JTracer.sendMessage('Progress:'+ numProgress)
 						_videoMask.updateProgress(numProgress < 0 ? 0 : numProgress);
 					}
 					break;
@@ -683,6 +684,7 @@
 					{
 						_player.streamInPlay.pause();
 					}
+					JTracer.sendMessage('get bufferend.')
 					break;
 				case 'OpenWindow':
 					//弹出窗口
@@ -1108,12 +1110,6 @@
 			}
 		}
 		
-		public function flv_setFullScreen(b:*):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> js回调flv_setFullScreen, 设置是否全屏:" + b);
-			stage.displayState = b?StageDisplayState.FULL_SCREEN:StageDisplayState.NORMAL;
-		}
-		
 		public function flv_play() :void
 		{
 			JTracer.sendMessage("PlayerCtrl -> js回调flv_play, 播放影片");
@@ -1301,14 +1297,7 @@
 			JTracer.sendMessage("PlayerCtrl -> js回调flv_getStreamBytesLoaded, 返回影片已下载数:" + bytes);
 			return bytes;
 		}
-		//获取当前播放影片长度，返回数据单位为秒
-		public function getDuration():int 
-		{
-			var total:Number = _player.totalTime;
-			JTracer.sendMessage("PlayerCtrl -> js回调getDuration, 返回总时长:" + total);
-			return total;
-		}
-		
+				
 		private function flv_getBufferBugInfo():String
 		{
 			var str:String = '';
@@ -1331,108 +1320,39 @@
 			JTracer.sendMessage("PlayerCtrl -> js回调setBufferTime, 设置缓冲时间_player.bufferTime:" + time);
 			_player.bufferTime = time;
 		}
-		
-		private function flv_changeBufferTime(time:Number):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> js回调flv_changeBufferTime, 设置缓冲时间:" + time);
-			_player.bufferTime = time;
-		}
-		
-		public function flv_setSeekPos(time:Number):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> js回调flv_setSeekPos, 设置拖动时间点:" + time);
-			_player.setSeekPos(time);
-		}
-		
+						
 		public function flv_setNoticeMsg(str:String, count:Boolean = false, showTime:int = 15, type:int = 1, callBackFun:String = null, start:int = 0, length:int = 0):void
 		{
 			JTracer.sendMessage("PlayerCtrl -> js回调flv_setNoticeMsg, 设置提示文字:" + str + ", 是否一直显示:" + count + ", 不是一直显示时自动关闭时间:" + showTime);
 			_noticeBar.setContent(str, count, showTime, type, callBackFun, start, length);
 		}
-		
-		/**
-		 * 试播倒计时
-		 * @param	time	倒计时，秒
-		 */
-		public function flv_setNoticeCountDown(time:Number):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> js回调flv_setNoticeCountDown, 设置试播倒计时:" + time);
-			_noticeBar.setCountDown(time);
-		}
-		
-		private function flv_closeNotice():void
-		{
-			JTracer.sendMessage("PlayerCtrl -> js回调flv_closeNotice, 关闭提示条");
-			
-			hideNoticeBar();
-		}
-		
+				
 		public function hideNoticeBar():void
 		{
 			_noticeBar.hideNoticeBar();
 		}
-		
-		private function flv_setVideoSize(num:Number):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> js回调flv_setVideoSize, 设置视频比例:" + num);
-			if (num < 0) return;
-			_ratioVideo = num;
-			changePlayerSize();
-		}
-		
-		private function flv_getRealVideoSize():Object
-		{
-			var sizeObject:Object = { 'realWidth':_player.nomarl_width, 'realHeight':_player.nomarl_height };
-			JTracer.sendMessage("PlayerCtrl -> js回调flv_getRealVideoSize, 返回视频宽高object:{'realWidth':" + sizeObject['realWidth'] + ", 'realHeight':" + sizeObject['realHeight'] + "}");
-			return sizeObject;
-		}
-		
+
 		private function flv_setIsChangeQuality(ischange:Boolean):void
 		{
 			JTracer.sendMessage("PlayerCtrl -> js回调flv_setIsChangeQuality, 设置是否切换清晰度:" + ischange);
 			isChangeQuality = ischange;
 		}
 		
-		private function flv_getSetStatusInfo():Object
-		{
-			JTracer.sendMessage("PlayerCtrl -> js回调flv_getSetStatusInfo");
-			return {};
-		}
-		
 		protected function initJsInterface():void{
 			if (ExternalInterface.available)
 			{
-				ExternalInterface.addCallback('flv_getDefaultFormat', flv_getDefaultFormat);
-				ExternalInterface.addCallback('getDownloadSpeed', getDownloadSpeed);//获取下载速度
-				ExternalInterface.addCallback('getDuration', getDuration);
 				ExternalInterface.addCallback('flv_play', flv_play);
 				ExternalInterface.addCallback('flv_pause', flv_pause);
 				ExternalInterface.addCallback('flv_stop', flv_stop);
 				ExternalInterface.addCallback('flv_close', flv_close);
+
 				ExternalInterface.addCallback('flv_setPlayeUrl', flv_setPlayeUrl);
 				ExternalInterface.addCallback('getPlayProgress', getPlayProgress);
-				ExternalInterface.addCallback('getBufferProgress', getBufferProgress);
-				ExternalInterface.addCallback("setSubTitleUrl", setSubTitleUrl);
-				ExternalInterface.addCallback("cancelSubTitle", cancelSubTitle);
-				ExternalInterface.addCallback('getVolume', getVolume);
-				ExternalInterface.addCallback('setVolume', setVolume);
-				ExternalInterface.addCallback('getPlayStatus', getPlayStatus);
-				ExternalInterface.addCallback('getPlaySize', getPlaySize);
-				ExternalInterface.addCallback('setPlaySize', setPlaySize);
-				ExternalInterface.addCallback('getErrorInfo', getErrorInfo);
-				ExternalInterface.addCallback('flv_showErrorInfo', flv_showErrorInfo);
-				ExternalInterface.addCallback('flv_setFullScreen', flv_setFullScreen);
+
 				ExternalInterface.addCallback('setBufferTime', setBufferTime);
-				ExternalInterface.addCallback('getBufferEnd', getBufferEnd);
-				ExternalInterface.addCallback('flv_setSeekPos', flv_setSeekPos);
 				ExternalInterface.addCallback('flv_setNoticeMsg', flv_setNoticeMsg);
-				ExternalInterface.addCallback('flv_setNoticeCountDown', flv_setNoticeCountDown);
-				ExternalInterface.addCallback('flv_closeNotice', flv_closeNotice);
-				ExternalInterface.addCallback('flv_changeBufferTime', flv_changeBufferTime);
-				ExternalInterface.addCallback('flv_setVideoSize', flv_setVideoSize);
-				ExternalInterface.addCallback('flv_getRealVideoSize', flv_getRealVideoSize);
+
 				ExternalInterface.addCallback('flv_setIsChangeQuality', flv_setIsChangeQuality);
-				ExternalInterface.addCallback('flv_getSetStatusInfo', flv_getSetStatusInfo);
 				ExternalInterface.addCallback('flv_getBufferLength', flv_getBufferLength);
 				ExternalInterface.addCallback('flv_getBufferBugInfo', flv_getBufferBugInfo);
 				ExternalInterface.addCallback('flv_stageVideoInfo', flv_stageVideoInfo);
@@ -1457,30 +1377,7 @@
 		}
 
 		public function flv_ready():Boolean{return true;}
-		
-		public function flv_getDefaultFormat():String
-		{
-			var defaultFormat:String = Cookies.getCookie('defaultFormat');
-			if (!defaultFormat || defaultFormat === "")
-			{
-				defaultFormat = "p";
-			}
-			
-			var urlStr:String = "PlayerCtrl -> js回调flv_getDefaultFormat, 取得默认清晰度:" + defaultFormat;
-			JTracer.sendMessage(urlStr);
-			
-			return defaultFormat;
-		}
 				
-		public function flv_showErrorInfo():void
-		{
-			var urlStr:String = "PlayerCtrl -> js回调flv_showErrorInfo, 显示204后三次重试失败界面";
-			JTracer.sendMessage(urlStr);
-			//非403显示一半错误信息;
-			if(!_player.playEnd)
-			showPlayError(null);
-		}
-		
 		public function flv_showBarNotice(str:String, showTime:uint = 0):void
 		{
 			var urlStr:String = "PlayerCtrl -> js回调flv_showBarNotice, 显示ctrBar提示，提示文字:" + str + ", 显示时间:" + showTime;
@@ -1497,7 +1394,7 @@
 			GlobalVars.instance.isExchangeError = !boo;
 			
 			//取消字幕
-			cancelSubTitle();
+			SubtitleManager.instance.cancelSubTitle();
 			
 			if (!boo)
 			{
@@ -1637,105 +1534,12 @@
 				_ctrBar.barEnabled = flag;
 			}
 		}
-		
-		public function setSubTitleUrl(url:String):void
-		{
-		 	SubtitleManager.instance.setSubTitleUrl(url);
-		}
-		
-		public function cancelSubTitle():void
-		{
-				SubtitleManager.instance.cancelSubTitle();
-		}
-		
-		public function getDownloadSpeed():Number
-		{
-			var speed:Number = _player.downloadSpeed;
-			JTracer.sendMessage("PlayerCtrl -> js回调getDownloadSpeed, 返回下载速度:" + speed);
-			return speed;
-		}
-		
-		private function getErrorInfo():String
-		{
-			var result:String;
-			result = _player.errorInfo;
-			if (result == "")
-			{
-				result = _ctrBar.errorInfo();
-			}
-			JTracer.sendMessage("PlayerCtrl -> js回调getErrorInfo, 返回错误码:" + result);
-			return result;
-		}
-		
-		private function setPlaySize(width:Number, height:Number):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> js回调setPlaySize, 设置影片宽:" + width + ", 高:" + height);
-			_player.width = width;
-			_player.height = height;	
-			_player.x = (stage.stageWidth-_player.width) / 2;
-			if (stage.displayState == StageDisplayState.NORMAL)
-			{
-				_player.y = (stage.stageHeight - _player.height) / 2;	
-			}else {
-				_player.y = (stage.stageHeight - _player.height + 40) / 2;			
-			}			
-		}
-		
-		private function getPlaySize():String
-		{
-			var playWidth:Number;
-			var playHeight:Number;
-			if (stage.displayState == StageDisplayState.NORMAL)
-			{
-				playWidth = _player.nomarl_width;
-				playHeight = _player.nomarl_height;
-			}else {
-				playWidth = _playFullWidth;
-				playHeight = _playFullHeight;				
-			}
-			JTracer.sendMessage("PlayerCtrl -> js回调getPlaySize, 返回影片宽,高:" + playWidth + "," + playHeight);
-			return playWidth + "," + playHeight;
-		}
-		
-		private function getPlayStatus():Number
-		{
-			var status:Number = _ctrBar.getPlayStatus();
-			JTracer.sendMessage("PlayerCtrl -> js回调getPlayStatus, 返回播放状态:" + status);
-			return status;
-		}
-		
-		private function setVolume(value:Number):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> js回调setVolume, 设置音量:" + value);
-			_ctrBar.setVolume(value);
-		}
-		
-		private function getVolume():Number
-		{
-			var vol:Number = _ctrBar.getVolume();
-			JTracer.sendMessage("PlayerCtrl -> js回调getVolume, 返回音量:" + vol);
-			return vol;
-		}
-		
-		private function getBufferProgress():Number
-		{
-			var pgs:Number = _ctrBar.getBufferProgress();
-			JTracer.sendMessage("PlayerCtrl -> js回调getBufferProgress, 返回缓冲进度为:" + pgs);
-			return pgs;
-		}
-		
+						
 		private function getPlayProgress(isTime:Boolean):Number
 		{
 			var result:Number = _ctrBar.getPlayProgress(isTime);
 			JTracer.sendMessage("PlayerCtrl -> js回调getPlayProgress, 设置是否返回播放时间(false返回播放百分比):" + isTime + ", 返回的播放时间或播放百分比为:" + result);
 			return result;
-		}
-		
-		private function getBufferEnd():Number
-		{
-			var bn:Number = _player.bufferEndTime;
-			JTracer.sendMessage("PlayerCtrl -> js回调getBufferEnd, 返回_player.bufferEnd:" + bn);
-			return bn;
 		}
 		
 		protected function hideSideChangeQuilty():void

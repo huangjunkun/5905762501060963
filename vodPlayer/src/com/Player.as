@@ -1348,25 +1348,6 @@
 			switch(event.info.code) {
 				case 'NetStream.Buffer.Empty':
 					JTracer.sendMessage("Player -> netStatusHandler, NetStream.Buffer.Empty, streamInPlay.time:" + streamInPlay.time + ", streamInPlay.bufferLenght:" + streamInPlay.bufferLength + ", streamInPlay.bufferTime:" + streamInPlay.bufferTime);
-					/*
-					if (GlobalVars.instance.isUseHttpSocket)
-					{
-						var seek_time:Number = this.time >= totalTime && totalTime > 0 ? totalTime - 0.001 : this.time;
-						var playTimeHeadIndex:uint = getNearIndex(dragTime, seek_time, 0, dragTime.length - 2);
-						
-						fixedTime = dragTime[playTimeHeadIndex];
-						fixedByte = playTimeHeadIndex == 0 ? StreamList.getHeader().length : dragPosition[playTimeHeadIndex];
-						bufferStart = seek_time;
-						//bufferStartTime = seek_time;
-						//_progressCacheTime = seek_time;
-						JTracer.sendMessage("Player -> netStatusHandler, NetStream.Buffer.Empty, bufferStart:" + bufferStart + ", playTimeHeadIndex:" + playTimeHeadIndex + ", fixedTime:" + fixedTime + ", fixedByte:" + fixedByte);
-						
-						is_seek_finish = false;
-						//streamInPlay.seek(0);
-						
-						seekInBuffer();
-					}
-					*/
 					dispatchEvent(new PlayEvent(PlayEvent.BUFFER_START));
 					break;
 				case 'NetStream.Play.Start':

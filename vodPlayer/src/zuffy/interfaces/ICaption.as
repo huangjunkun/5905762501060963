@@ -1,21 +1,21 @@
-package zuffy.interfaces {
+﻿package zuffy.interfaces {
 	
 	public interface ICaption{
 		
 		// 标记视频是否正在加载
-		public var isStartPlayLoading:Boolean;
+		function get isStartPlayLoading():Boolean;
 		
 		// 标记视频是否在播放
-		public var videoIsPlaying:Boolean;
+		function get videoIsPlaying():Boolean;
 
 		// 标记视频时间
-		public var videoTime:Number;
+		function get videoTime():Number;
 
 		// 显示自动加载字幕
-		public function showAutoloadTips():void;
+		function showAutoloadTips():void;
 
 		// 显示文字提示
-		public function showPlayerTxtTips(tips:String, time:Number):void;
+		function showPlayerTxtTips(tips:String, time:Number):void;
 
 		
 
