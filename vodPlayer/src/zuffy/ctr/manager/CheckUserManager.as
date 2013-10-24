@@ -10,19 +10,8 @@
 	import flash.external.ExternalInterface;
 	import com.global.GlobalVars;
 	
-	public class CheckUserManager{
+	public class CheckUserManager extends SingleManager {
 		
-		private static var _instance:CheckUserManager;
-		public static function get instance():CheckUserManager
-		{
-			if (!_instance)
-			{
-				_instance = new CheckUserManager();
-			}
-			
-			return _instance;
-		}
-
 		//登陆是否有效，默认有效
 		private var _isValid:Boolean = true;
 		public function get isValid():Boolean { return _isValid;}
@@ -38,10 +27,10 @@
 		private var _checkFlowLoader:URLLoader;
 
 		public function CheckUserManager(){
-			init();
+
 		}
 
-		private function init():void{
+		override protected function init():void{
 
 			_checkUserLoader = new URLLoader();
 			_checkUserLoader.addEventListener(Event.COMPLETE, onCheckUserComplete);
