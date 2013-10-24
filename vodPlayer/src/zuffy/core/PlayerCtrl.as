@@ -44,6 +44,7 @@
 	import zuffy.utils.Tools;
 	import zuffy.utils.JTracer;
 	import zuffy.ctr.manager.SubtitleManager;
+	import zuffy.ctr.manager.CtrBarManager;
 	
 	// 字幕接口
 	import zuffy.interfaces.ICaption;
@@ -184,7 +185,7 @@
 			_player.addEventListener(Player.INIT_PAUSE, handleInitPause);
 			this.addChild(_player);
 
-			SubtitleManager.instance.CSubtitleMake(this, tWidth, tHeight);
+			SubtitleManager.instance.makeInstance(this, tWidth, tHeight);
 			
 			_eventCaptureScreen = new Sprite();
 			_eventCaptureScreen.graphics.clear();
@@ -210,15 +211,9 @@
 			_noticeBar = new NoticeBar(this);
 			this.addChild(_noticeBar);
 			
-			_ctrBar = new CtrBar(tWidth,tHeight,_has_fullscreen, this);
-			_ctrBar.showPlayOrPauseButton='PLAY';
-			_ctrBar.flvPlayer=_player;
-			_ctrBar.available = true;
-			_ctrBar.faceLifting(stage.stageWidth);
-			_ctrBar.y = stage.stageHeight - 33;
-			_ctrBar.faceLifting(stage.stageWidth);
-			this.addChild(_ctrBar);
-
+			// _ctrBar = new CtrBar(tWidth,tHeight,_has_fullscreen, this);
+			CtrBarManager.instance.makeInstance(this, tWidth, tHeight, _has_fullscreen);
+			
 			_mouseControl = new MouseControl(this);
 			_mouseControl.addEventListener("MOUSE_SHOWED", handleMouseInside);
 			_mouseControl.addEventListener("MOUSE_HIDED", handleMouseOutSide);	
@@ -499,7 +494,6 @@
 		{
 			switch(e.type) {
 				case 'lower_qulity':
-					//_bufferTip.changeQulityHandler();
 					_ctrBar.changeToNextFormat();
 					_ctrBar.isClickBarSeek = false;
 					_isPressKeySeek = false;
@@ -1135,9 +1129,6 @@
 		public function flv_close() :void
 		{
 			JTracer.sendMessage('PlayerCtrl -> js回调flv_close, 停止影片并且关闭流');
-			//isChangeQuality = false;
-			//_ctrBar.dispatchStop();
-			//_videoMask.bufferHandle('Stop');
 			_player.clearUp();
 		}
 		
