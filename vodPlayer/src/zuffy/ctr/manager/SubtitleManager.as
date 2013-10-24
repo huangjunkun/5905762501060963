@@ -5,9 +5,19 @@
 	import zuffy.events.CaptionEvent;
 	import zuffy.interfaces.ICaption;
 	
-	public class SubtitleManager extends SingleManager {
+	public class SubtitleManager {
 		private var _subTitle:Subtitle;					//字幕条
 		private var mainCtrl:ICaption;
+		private static var _instance:SubtitleManager;
+
+		public static function get instance(): SubtitleManager {
+			
+			if (!_instance) {
+				_instance = new SubtitleManager ();
+			}
+			
+			return _instance;
+		}
 
 		public function SubtitleManager() {
 

@@ -1,4 +1,4 @@
-﻿package zuffy.display
+﻿package zuffy.ctr.manager
 {
 	import com.common.Cookies;
 	import com.greensock.TweenLite;
@@ -43,7 +43,11 @@
 	import zuffy.core.PlayerCtrl;
 	import com.Player;
 	
-	public class CtrBarManager extends SingleManager {
+	public class CtrBarManager {
+	
+		public const NORMAL_PROGRESSBAR_HEIGTH:uint = 7;
+		public const SMALL_PROGRESSBAR_HEIGTH:uint = 3;
+
 		public var _barBg:DefaultBar;          //控制条的背景
 		public var _barBuff:LoadingBar;	     //缓冲进度条
 		public var _barPlay:PlayBar;	     //已播放进度条
@@ -79,38 +83,50 @@
 		private var _captionBtnTips:MovieClip;
 		
 		private var _container:Sprite;
+		
+		private static var _instance:CtrBarManager;
 
-		public function CtrBarManager() {
+		public static function get instance(): CtrBarManager {
 			
+			if (!_instance) {
+				_instance = new CtrBarManager ();
+			}
+			
+			return _instance;
+		}
+		public function CtrBarManager() {
+			_container = new Sprite();
 		}
 
-		public function makeInstance(playctrlhandler:PlayerCtrl, w:Number = 352, h:Number = 293 , has_fullscreen = 0):void {
+		public function makeInstance(playctrlhandler:PlayerCtrl, w:Number = 352, h:Number = 293 , has_fullscreen = 0, _player:Player=null):void {
+			this._player = _player
+			_stageInfo = { 'WIDTH':w, 'HEIGHT':h };
 			
-			_container = new Sprite();
-			_container.y = h - 33;
-			_container.x = 0;
+			playWidth = w;
+			playHeight = h;
+
 			_container.addEventListener(Event.ADDED_TO_STAGE, handleAddedToStage);
 			_container.addEventListener(MouseEvent.MOUSE_OVER, handleMouseOver);
 			_container.addEventListener(MouseEvent.MOUSE_OUT, handleMouseOut);
+			playctrlhandler.addEventListener(ControlEvent.SHOW_CTRBAR, controlEventHandler);
+			
+			playctrlHandler = playctrlhandler;
 			playctrlHandler.addEventListener(MouseEvent.ROLL_OUT, handleMouseOutPlayer);
-			
-			playctrlhandler.addChild(_container);
-
-			
-			_stageInfo = { 'WIDTH':w, 'HEIGHT':h };
-			playWidth = w;
-			playHeight = h;
-			
-			addCtr();
-
-			showPlayOrPauseButton = 'PLAY';
-			// _ctrBar.flvPlayer=_player;
-			// _ctrBar.available = true;
-			// _ctrBar.faceLifting(stage.stageWidth);
-			_container.y = stage.stageHeight - 33;
-			// _ctrBar.faceLifting(stage.stageWidth);
+			playctrlHandler.addChild(_container);
+			fixedY = _container.stage.stageHeight - 33
+			faceLifting(_container.stage.stageWidth);
 		}
-		
+
+		private function controlEventHandler(e:ControlEvent):void
+		{
+			if (e.info == 'hidden') {
+				_barSlider.visible = false;
+				_seekEnable = false;
+			}else {
+				_seekEnable = true;
+			}
+		}
+
 		public function showCaptionBtn():void
 		{
 			var tf:TextFormat = new TextFormat();
@@ -226,7 +242,7 @@
 			{
 				if (_noticeText)
 				{
-					removeChild(_noticeText);
+					_container.removeChild(_noticeText);
 					_noticeText = null;
 				}
 				
@@ -237,7 +253,7 @@
 		
 		private function showCaptionFace(evt:MouseEvent):void
 		{
-			dispatchEvent(new EventSet(EventSet.SHOW_FACE, "caption"));
+			_container.dispatchEvent(new EventSet(EventSet.SHOW_FACE, "caption"));
 			
 			if (_captionBtnTips)
 			{
@@ -277,9 +293,12 @@
 		
 		private function handleAddedToStage(e:Event):void 
 		{
-			removeEventListener(Event.ADDED_TO_STAGE, handleAddedToStage);
-			_btnPlayBig.y = (stage.stageHeight - 60);
-			_btnPauseBig.y = (stage.stageHeight - 60);
+			_container.removeEventListener(Event.ADDED_TO_STAGE, handleAddedToStage);
+			
+			addCtr();
+			_btnPlayBig.y = (_container.stage.stageHeight - 60);
+			_btnPauseBig.y = (_container.stage.stageHeight - 60);
+			addEventHandler();
 		}
 		
 		private function handleMouseOver(e:MouseEvent):void
@@ -301,7 +320,7 @@
 			
 			barBox = new Sprite();
 			_container.addChild(barBox);			
-			barBox.graphics.beginFill(0x181818,1);			
+			barBox.graphics.beginFill(0x181818,1);
 			barBox.graphics.drawRect(0, 0, Capabilities.screenResolutionY + 1000, 33);
 			
 			_ctrBarBg = new CtrBarBg();
@@ -414,8 +433,7 @@
 			_barPreDown.y = -6;
 		}
 		
-		public function faceLifting(w) 
-		{
+		public function faceLifting(w) {
 			var dex:Number = _beFullscreen ? 26 : 0;
 			
 			_stageInfo.CURR_WIDTH = w;
@@ -508,10 +526,10 @@
 			
 			_btnPlayBig.x = 50-20;
 			_btnPauseBig.x = 50-20;
-			var bigPauseY:Number = (stage? stage.stageHeight:playHeight);
+			var bigPauseY:Number = (_container.stage? _container.stage.stageHeight:playHeight);
 			_btnPlayBig.y = (bigPauseY - 120);
 			_btnPauseBig.y = (bigPauseY - 120);
-			if (stage)
+			if (_container.stage)
 			{
 				_container.parent.addChild(_btnPlayBig);
 				_container.parent.addChild(_btnPauseBig);
@@ -759,7 +777,7 @@
 			_mcTimeTipArrow.visible = _mcTimeTip.visible;
 			
 			var total_time:Number = _player.totalTime;
-			var seek_time:Number = stage.mouseX / _barWidth * total_time;
+			var seek_time:Number = _container.stage.mouseX / _barWidth * total_time;
 			seek_time = (seek_time > total_time ? total_time : seek_time);
 			seek_time = (seek_time < 0 ? 0 : seek_time);
 			
@@ -770,7 +788,7 @@
 			
 			if (_mcTimeTip.scaleType != 1 && !_mcTimeTip.hasSnapShot)
 			{
-				this.removeEventListener(Event.ENTER_FRAME, onVideoTipEnter);
+				_container.removeEventListener(Event.ENTER_FRAME, onVideoTipEnter);
 				
 				clearTimeout(_videoTipID);
 				
@@ -785,10 +803,10 @@
 			}
 			
 			_mcTimeTip.text = formatTime(seek_time);
-			_mcTimeTip.curMouseX = stage.mouseX;
+			_mcTimeTip.curMouseX = _container.stage.mouseX;
 			setTimeTipPos(_mcTimeTip.curMouseX);
 			
-			this.addEventListener(Event.ENTER_FRAME, onVideoTipEnter);
+			_container..addEventListener(Event.ENTER_FRAME, onVideoTipEnter);
 			
 			if (_mcTimeTip.hasSnapShot)
 			{
@@ -804,15 +822,15 @@
 					if (_isFirstShowTips)
 					{
 						clearTimeout(_timeOutID);
-						_timeOutID = setTimeout(showVideoTips, 200, seek_time, stage.mouseX, e.stageX);
+						_timeOutID = setTimeout(showVideoTips, 200, seek_time, _container.stage.mouseX, e.stageX);
 					}
 					else
 					{
-						showVideoTips(seek_time, stage.mouseX, e.stageX);
+						showVideoTips(seek_time, _container.stage.mouseX, e.stageX);
 					}
 					
 					clearTimeout(_videoTipID);
-					_videoTipID = setTimeout(showVideoTipsFromSnap, 3000, seek_time, stage.mouseX, e.stageX);
+					_videoTipID = setTimeout(showVideoTipsFromSnap, 3000, seek_time,_container. stage.mouseX, e.stageX);
 				}
 			}
 			else
@@ -822,15 +840,13 @@
 					_lastStartIdx = startIdx;
 					
 					clearTimeout(_videoTipID);
-					_videoTipID = setTimeout(showVideoTipsFromTips, 3000, seek_time, stage.mouseX, e.stageX);
+					_videoTipID = setTimeout(showVideoTipsFromTips, 3000, seek_time, _container.stage.mouseX, e.stageX);
 				}
 			}
 		}
 		
 		private function bar_MOUSE_OUT_handler(e:MouseEvent):void
 		{
-			//_mcTimeTip.visible = false;
-			//_mcTimeTipArrow.visible = false;
 		}
 		
 		private function handleMouseOutPlayer(e:MouseEvent):void
@@ -943,30 +959,31 @@
 			
 			var videoLeft:Number = _mcTimeTip.x - _mcTimeTip.width / 2;			//视频提示左边端点
 			var videoRight:Number = _mcTimeTip.x + _mcTimeTip.width / 2;		//视频提示右边端点
-			var videoTop:Number = stage.stageHeight - 43 - _mcTimeTip.height;	//视频提示上边端点
-			var videoBottom:Number = stage.stageHeight - 43;					//视频提示下边端点
-			var barTop:Number = stage.stageHeight - 32 - _barBg.height;			//进度条上边端点
-			var barBottom:Number = stage.stageHeight - 32;						//进度条下边端点
+			var videoTop:Number = _container.stage.stageHeight - 43 - _mcTimeTip.height;	//视频提示上边端点
+			var videoBottom:Number = _container.stage.stageHeight - 43;					//视频提示下边端点
+			var barTop:Number = _container.stage.stageHeight - 32 - _barBg.height;			//进度条上边端点
+			var barBottom:Number = _container.stage.stageHeight - 32;						//进度条下边端点
 			
 			//未放大视频提示时
 			if (!_mcTimeTip.isScale)
 			{
-				if (stage.mouseY < barTop || stage.mouseY > barBottom)
+				if (_container.stage.mouseY < barTop || _container.stage.mouseY > barBottom)
 				{
 					//超出进度条范围，隐藏时间提示
 					hideVideoTips();
 				}
 				return;
 			}
-			
-			if (stage.mouseX < videoLeft || stage.mouseX > videoRight || stage.mouseY < videoTop || stage.mouseY > barBottom)
+			var mx:Number = _container.stage.mouseX;
+			var my:Number = _container.stage.mouseY;
+			if ( mx < videoLeft || mx > videoRight || my < videoTop || my > barBottom)
 			{
 				//超出视频提示范围，隐藏视频提示
 				hideVideoTips();
 			}
 			else
 			{
-				if (stage.mouseY <= videoBottom)
+				if (my <= videoBottom)
 				{
 					//移动到视频提示范围，放大视频提示
 					if (_mcTimeTip.scaleType != 3)
@@ -991,7 +1008,7 @@
 		//隐藏视频提示
 		private function hideVideoTips():void
 		{
-			this.removeEventListener(Event.ENTER_FRAME, onVideoTipEnter);
+			_container..removeEventListener(Event.ENTER_FRAME, onVideoTipEnter);
 			
 			clearTimeout(_videoTipID);
 			clearTimeout(_timeOutID);
@@ -1018,9 +1035,9 @@
 			{
 				_mcTimeTipArrow.x = 2;
 			}
-			else if (_mcTimeTipArrow.x > stage.stageWidth - _mcTimeTipArrow.width - 2)
+			else if (_mcTimeTipArrow.x > _container.stage.stageWidth - _mcTimeTipArrow.width - 2)
 			{
-				_mcTimeTipArrow.x = stage.stageWidth - _mcTimeTipArrow.width - 2;
+				_mcTimeTipArrow.x = _container.stage.stageWidth - _mcTimeTipArrow.width - 2;
 			}
 			_mcTimeTipArrow.y = -12;
 			
@@ -1029,9 +1046,9 @@
 			{
 				_mcTimeTip.x = _mcTimeTip.width / 2;
 			}
-			else if (_mcTimeTip.x > stage.stageWidth - _mcTimeTip.width / 2)
+			else if (_mcTimeTip.x > _container.stage.stageWidth - _mcTimeTip.width / 2)
 			{
-				_mcTimeTip.x = stage.stageWidth - _mcTimeTip.width / 2;
+				_mcTimeTip.x = _container.stage.stageWidth - _mcTimeTip.width / 2;
 			}
 			_mcTimeTip.y = -10;
 		}
@@ -1393,7 +1410,7 @@
 			_btnTips.visible = false;
 			hideFilelistTips();
 			
-			dispatchEvent(new EventSet(EventSet.SHOW_FACE, "filelist"));
+			_container.dispatchEvent(new EventSet(EventSet.SHOW_FACE, "filelist"));
 		}
 		
 		public function get cacheVolume():Number
@@ -1444,7 +1461,7 @@
 				ExternalInterface.call("flv_playerEvent", "onRePlay");//播放完后再播放
 			}else {
 				ExternalInterface.call("flv_playerEvent", "onStartPlay");
-				this.dispatchEvent(new PlayEvent(PlayEvent.PLAY));
+				_container.dispatchEvent(new PlayEvent(PlayEvent.PLAY));
 			}
 		}
 		
@@ -1469,14 +1486,14 @@
 			{
 				return;
 			}*/
-			dispatchEvent(new PlayEvent(PlayEvent.PAUSE));
+			_container.dispatchEvent(new PlayEvent(PlayEvent.PAUSE));
 			_btnPauseBig.visible = true;
 			_btnPlay.visible=true;
 			_btnPause.visible = false;
 			ExternalInterface.call("flv_playerEvent", "onPause");
 		}
 		
-		public function dispatchStop(e = null) {
+		public function dispatchStop() {
 			ExternalInterface.call("flv_playerEvent", "onStop");
 			
 			if(_player.streamInPlay){
@@ -1499,7 +1516,7 @@
 			
 			_player.fixedTime = 0;
 			setDownloadSpeedText(0);
-			this.dispatchEvent(new PlayEvent(PlayEvent.STOP));
+			_container.dispatchEvent(new PlayEvent(PlayEvent.STOP));
 			if (_isChangeQuality == false) {
 				setPlayTimeText('00:00/00:00');
 			}
@@ -1535,7 +1552,7 @@
 			playctrlHandler.isStopNormal = true;
 			playctrlHandler.isShowStopFace = false;
 			
-			this.dispatchEvent(new PlayEvent(PlayEvent.STOP, true));
+			_container..dispatchEvent(new PlayEvent(PlayEvent.STOP, true));
 			
 			playctrlHandler.hideNoticeBar();
 			playctrlHandler._videoMask.showInputFace();
@@ -1567,12 +1584,12 @@
 		/* 全屏时鼠标移动处理函数 */
 		private function _MOUSE_MOVE_handler(e):void
 		{
-			visible=true;
+			_container.visible=true;
 			if(_timerHide){
 				_timerHide.stop();
 			}
 			_timerHide=new Timer(2000,1);
-			_timerHide.addEventListener('timer',function(e){visible=false;});
+			_timerHide.addEventListener('timer',function(e){_container.visible=false;});
 			_timerHide.start();
 		}
 		
@@ -1672,7 +1689,6 @@
 				/* 音量调节 */
 				_mcVolume.addEventListener(VolumeEvent.VOLUME_CHANGE, handleVolumeChanged);
 				_mcVolume.addEventListener(MouseEvent.ROLL_OUT, handleVolumeMouseOut);
-				
 				_timerBP.start();
 			}else{
 				/* 音量调节 */
@@ -1711,18 +1727,18 @@
 		
 		public function setFullScreen(beFullsreen)
 		{
-			var screenHeight=stage.stageHeight;	
-			var screenWidth = stage.stageWidth;
+			var screenHeight= _container.stage.stageHeight;	
+			var screenWidth = _container.stage.stageWidth;
 			_beFullscreen=beFullsreen;
 			if (beFullsreen) {
 				playWidth = screenWidth;
 				playHeight = screenHeight;
-				y = screenHeight-33;
+				_container.y = screenHeight-33;
 				faceLifting(screenWidth);
 			}else {
-				playWidth = stage.stageWidth;
-				playHeight = stage.stageHeight;	
-				y = playHeight - 33;
+				playWidth = _container.stage.stageWidth;
+				playHeight = _container.stage.stageHeight;	
+				_container.y = playHeight - 33;
 				faceLifting(playWidth);				
 			}
 		}
@@ -1914,15 +1930,15 @@
 					_btnTips.text = '列表';
 					break;
 				case _btnFullscreen:
-					if (stage.displayState == StageDisplayState.NORMAL)
+					if (_container.stage.displayState == StageDisplayState.NORMAL)
 					{
-						_btnTips.x = stage.stageWidth - 41;
+						_btnTips.x = _container.stage.stageWidth - 41;
 						_btnTips.bgWidth = 44;
 						_btnTips.text = '全屏';
 					}
 					else
 					{
-						_btnTips.x = stage.stageWidth - 67;
+						_btnTips.x = _container.stage.stageWidth - 67;
 						_btnTips.bgWidth = 70;
 						_btnTips.text = '退出全屏';
 					}
@@ -1957,18 +1973,64 @@
 		{
 			_formatBtn.changeToNextFormat();
 		}
-		
-		public function set seekEnable(enable:Boolean):void
+
+		public function normalPlayProgressBar():void
 		{
-			this._seekEnable = enable;
+			if( _barBg.height == this.SMALL_PROGRESSBAR_HEIGTH )
+			{
+				if(this._seekEnable){
+					_barSlider.visible = true;
+				}
+				_barBg.height = this.NORMAL_PROGRESSBAR_HEIGTH;
+				_barBuff.height = this.NORMAL_PROGRESSBAR_HEIGTH;
+				_barPlay.height = this.NORMAL_PROGRESSBAR_HEIGTH;
+				_barPreDown.height = this.NORMAL_PROGRESSBAR_HEIGTH;
+				
+				_barBg.y = -6 ;
+				_barBuff.y = -6;
+				_barPlay.y = -6;
+				_barPreDown.y = -6 ;
+			}
 		}
-		
+
+		public function smallPlayProgressBar(isVideoPlaying:Boolean):void
+		{
+			if( _barBg.height ==  NORMAL_PROGRESSBAR_HEIGTH )
+			{
+				if( isVideoPlaying || _btnPauseBig.visible )
+				{
+					_barSlider.visible =false;
+					_barBg.height = this.SMALL_PROGRESSBAR_HEIGTH;
+					_barBg.y = -2;
+					_barBuff.height = this.SMALL_PROGRESSBAR_HEIGTH;
+					_barBuff.y = -2;
+					_barPlay.height = this.SMALL_PROGRESSBAR_HEIGTH;
+					_barPlay.y  = -2;
+					_barPreDown.height = this.SMALL_PROGRESSBAR_HEIGTH;
+					_barPreDown.y = -2;									
+				}
+			}
+		}
+
+		public function get isProgressBarNormal():Boolean {
+			return _barBg.height == NORMAL_PROGRESSBAR_HEIGTH;
+		}
+				
 		public function set enableFileList(v:Boolean):void
 		{
 			_btnFilelist.mouseEnabled = v;
 			_btnFilelist.alpha = v ? 1: 0.5;
 		}
+
+		public function set fixedY(value:Number):void {
+			_container.y = value;
+			faceLifting(_container.stage.stageWidth);
+		}
 		
+		public function set visible(value:Boolean):void {
+			_container.visible = value;
+		}
+
 		private var _txtPlayTime:TextField;        		//播放时间文字区
 		private var _txtDownloadSpeed:TextField;   		//下载速度文字区
 		private var _mcVolume:McVolume;            

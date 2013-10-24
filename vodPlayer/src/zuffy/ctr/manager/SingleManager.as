@@ -1,4 +1,4 @@
-﻿package zuffy.display {
+﻿package zuffy.ctr.manager {
 	public class SingleManager {
 		
 		private static var _instance: SingleManager;
@@ -6,13 +6,13 @@
 		public static function get instance(): SingleManager {
 			
 			if (!_instance) {
-				_instance = new SingleManager (new __inner__());
+				_instance = new SingleManager ();
 			}
 			
 			return _instance;
 		}
 
-		public function SingleManager(__:__inner__) {
+		public function SingleManager() {
 			init();
 		}
 
@@ -21,8 +21,4 @@
 		}
 		
 	}	
-}
-
-class __inner__ {
-	public function __inner__(){}
 }

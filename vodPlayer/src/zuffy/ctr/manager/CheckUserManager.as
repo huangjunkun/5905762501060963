@@ -27,7 +27,17 @@
 		private var _checkFlowLoader:URLLoader;
 
 		public function CheckUserManager(){
+			super();
+		}
+		private static var _instance:CheckUserManager;
 
+		public static function get instance(): CheckUserManager {
+			
+			if (!_instance) {
+				_instance = new CheckUserManager ();
+			}
+			
+			return _instance;
 		}
 
 		override protected function init():void{

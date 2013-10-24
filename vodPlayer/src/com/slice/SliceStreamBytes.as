@@ -24,6 +24,7 @@
 	import flash.utils.getTimer;
 	
 	import zuffy.events.TryPlayEvent;
+	import zuffy.ctr.manager.CtrBarManager;
 	
 	/**
 	 * p2s多段拼接
@@ -235,11 +236,8 @@
 							//暂停
 							if (!_player.isStop)
 							{
-//								_player.main_mc._ctrBar.dispatchPause();
+								CtrBarManager.instance.dispatchPause();
 							}
-							
-							//_player.main_mc.flv_setNoticeMsg("您的播放时长剩余0，迅雷白金会员不限时长，<a href='event:buyVIP13FluxOut'>加5元升级为白金</a>", true);
-							//_player.main_mc.flv_setIsShowNoticeClose(false);
 							
 							JTracer.sendMessage("SliceStreamBytes -> 时长用完导致播放停止, ygcid:" + Tools.getUserInfo("ygcid") + ", userid:" + Tools.getUserInfo("userid"));
 							Tools.stat('f=fluxoutstop&gcid=' + Tools.getUserInfo("ygcid"));
