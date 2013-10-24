@@ -400,7 +400,9 @@
 				myTimer.start();
 			}
 			_status = 0;
+			
 			ExternalInterface.call("flv_playerEvent", "onPlayStatusChanged");
+
 			initialDownLoadTimer();
 			initialAppendTimer();
 			if((streamInPlay && streamInPlay.time > 0 && isStop == false ) || isPause== true )
@@ -412,7 +414,9 @@
 				ExternalInterface.call("flv_playerEvent", "onplaying");
 				JTracer.sendMessage('Player -> onplaying');
 			}else {
+				
 				dispatchEvent(new PlayEvent(PlayEvent.PLAY_NEW_URL));
+
 				if (videoUrlArr[0].start > 0) {
 				JTracer.sendMessage("Player -> play, netstream, loadMetaData");
 					if (_streamMetaData)

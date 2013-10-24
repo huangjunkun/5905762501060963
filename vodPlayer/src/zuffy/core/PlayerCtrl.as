@@ -152,18 +152,18 @@
 
 			var _w:int = int(tParams["width"]) ? int(tParams["width"]) : stage.stageWidth;
 			var _h:int = int(tParams["height"]) ? int(tParams["height"]) : stage.stageHeight;
-			
+						
 			// 初始化基本界面
 			initializeUI(_w, _h);
+			
+			// stage 事件
+			initStageEvent();
 			
 			// 与js通信接口
 			initJsInterface();
 
 			// 初始化其他;
 			initOther();
-			
-			initStageEvent();
-
 		}
 		//显示系统时间
 		public function setSystemTime():void
@@ -208,7 +208,7 @@
 			_noticeBar = new NoticeBar(this);
 			this.addChild(_noticeBar);
 			
-			CtrBarManager.instance.makeInstance(this, tWidth, tHeight, _has_fullscreen);
+			CtrBarManager.instance.makeInstance(this, tWidth, tHeight, _has_fullscreen, _player);
 			CtrBarManager.instance.available =  true;
 			CtrBarManager.instance.showPlayOrPauseButton = 'PLAY';
 
@@ -506,9 +506,9 @@
 		
 		protected function playEventHandler(e:PlayEvent):void
 		{
-			if(e.type != 'Progress'){
+			//if(e.type != 'Progress'){
 				JTracer.sendMessage('PlayerCtrl -> playEventHandler, PlayEvent.' + e.type);
-			}
+			//}
 			_videoMask.isBuffer = _player.isBuffer;
 			_videoMask.bufferHandle(e.type, e.info);
 			_player.playEventHandler(e);
@@ -551,6 +551,7 @@
 					_isPlayStart = false;
 					break;
 				case 'PlayNewUrl':
+					JTracer.sendMessage('in play new');
 					if (isChangeQuality == true) {
 						_videoMask.showLoadingQuality();
 					}else{
@@ -617,7 +618,6 @@
 					_isBuffering = false;
 					break;
 				case 'Progress':
-					JTracer.sendMessage('inprogress..')
 					if (_player.streamInPlay) {
 						//hwh
 						var numProgress:Number;
@@ -633,7 +633,6 @@
 							numProgress = _player.streamInPlay.bufferLength / _player.streamInPlay.bufferTime;
 							
 						}
-						JTracer.sendMessage('Progress:'+ numProgress)
 						_videoMask.updateProgress(numProgress < 0 ? 0 : numProgress);
 					}
 					break;

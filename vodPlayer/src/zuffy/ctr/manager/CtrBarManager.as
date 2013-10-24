@@ -98,8 +98,8 @@
 			_container = new Sprite();
 		}
 
-		public function makeInstance(playctrlhandler:PlayerCtrl, w:Number = 352, h:Number = 293 , has_fullscreen = 0):void {
-			
+		public function makeInstance(playctrlhandler:PlayerCtrl, w:Number = 352, h:Number = 293 , has_fullscreen = 0, _player:Player=null):void {
+			this._player = _player
 			_stageInfo = { 'WIDTH':w, 'HEIGHT':h };
 			
 			playWidth = w;
@@ -564,7 +564,7 @@
 		/* 为添加控件事件响应函数 */
 		private function addEventHandler() 
 		{
-			//_player.addEventListener(PlayEvent.STOP,handlePlayStop);
+			_player.addEventListener(PlayEvent.STOP,handlePlayStop);
 			_btnFullscreen.addEventListener(MouseEvent.CLICK, fullscreen_CLICK_handler);
 			
 			_btnMute.addEventListener(MouseEvent.MOUSE_OVER, volumeBtnEventHandler);
@@ -847,8 +847,6 @@
 		
 		private function bar_MOUSE_OUT_handler(e:MouseEvent):void
 		{
-			//_mcTimeTip.visible = false;
-			//_mcTimeTipArrow.visible = false;
 		}
 		
 		private function handleMouseOutPlayer(e:MouseEvent):void
