@@ -38,6 +38,7 @@
 	import flash.text.TextFormat;
 	import com.serialization.json.JSON;
 	import zuffy.ctr.manager.SubtitleManager;
+	import zuffy.ctr.manager.CtrBarManager;
 
 	public class PanelPlayerCtrl extends PlayerCtrl
 	{
@@ -122,21 +123,22 @@
 			
 			//使tooltip显示在最上层
 			Tools.registerToolTip(this);
-			setObjectLayer();
+			//setObjectLayer();
 		}
 
 		private function setObjectLayer():void
 		{
+			/*
 			var layerIndexArr:Array = [];
 			layerIndexArr.push(getChildIndex(_settingSpace));
-			layerIndexArr.push(getChildIndex(_ctrBar));
+			layerIndexArr.push(getChildIndex(CtrBarManager.instance));
 			layerIndexArr.sort(orderArrFun);
-			if (getChildIndex(_ctrBar) != layerIndexArr[0]) {
-				setChildIndex(_ctrBar, layerIndexArr[0]);
+			if (getChildIndex(CtrBarManager.instance) != layerIndexArr[0]) {
+				setChildIndex(CtrBarManager.instance, layerIndexArr[0]);
 			}
 			if (getChildIndex(_settingSpace) != layerIndexArr[1]) {
 				setChildIndex(_settingSpace, layerIndexArr[1]);
-			}
+			}*/
 		}
 
 		//显示系统时间
@@ -220,7 +222,7 @@
 			isStopNormal = false;
 			isShowStopFace = false;
 			
-			_ctrBar.dispatchStop();
+			CtrBarManager.instance.dispatchStop();
 			_videoMask.showErrorNotice(VideoMask.noEnoughBytes);
 		}
 		
@@ -518,7 +520,7 @@
 				
 				if (!_player.isStop)
 				{
-					_ctrBar.dispatchPlay();
+					CtrBarManager.instance.dispatchPlay();
 				}
 				
 				reportSetStat();
@@ -535,7 +537,7 @@
 				
 				if (!_player.isStop)
 				{
-					_ctrBar.dispatchPause();
+					CtrBarManager.instance.dispatchPause();
 				}
 			}
 		}
@@ -583,7 +585,7 @@
 				
 				if (!_player.isStop)
 				{
-					_ctrBar.dispatchPlay();
+					CtrBarManager.instance.dispatchPlay();
 				}
 			}
 			else
@@ -598,7 +600,7 @@
 				
 				if (!_player.isStop)
 				{
-					_ctrBar.dispatchPause();
+					CtrBarManager.instance.dispatchPause();
 				}
 			}
 		}
@@ -614,7 +616,7 @@
 				
 				if (!_player.isStop)
 				{
-					_ctrBar.dispatchPlay();
+					CtrBarManager.instance.dispatchPlay();
 				}
 				
 				reportCaptionStat();
@@ -628,7 +630,7 @@
 				
 				if (!_player.isStop)
 				{
-					_ctrBar.dispatchPause();
+					CtrBarManager.instance.dispatchPause();
 				}
 			}
 		}
@@ -694,7 +696,7 @@
 				
 				if (!_player.isStop)
 				{
-					_ctrBar.dispatchPlay();
+					CtrBarManager.instance.dispatchPlay();
 				}
 			}
 			else
@@ -709,7 +711,7 @@
 				
 				if (!_player.isStop)
 				{
-					_ctrBar.dispatchPause();
+					CtrBarManager.instance.dispatchPause();
 				}
 			}
 		}
@@ -725,7 +727,7 @@
 				
 				if (!_player.isStop)
 				{
-					_ctrBar.dispatchPlay();
+					CtrBarManager.instance.dispatchPlay();
 				}
 			}
 			else
@@ -740,7 +742,7 @@
 				
 				if (!_player.isStop)
 				{
-					_ctrBar.dispatchPause();
+					CtrBarManager.instance.dispatchPause();
 				}
 			}
 		}
@@ -749,7 +751,7 @@
 		{
 			_downloadFace.showFace(false);
 			
-			_ctrBar.dispatchPlay();
+			CtrBarManager.instance.dispatchPlay();
 		}
 
 		private function applyCaptionSuccess(evt:CaptionEvent):void
@@ -865,7 +867,7 @@
 							var isNoticeList:* = Cookies.getCookie('isNoticeList');
 							if (Tools.getUserInfo("urlType") != "url" && _fileListFace.filelistLength > 1 && isNoticeList !== false)
 							{
-								_ctrBar.showFilelistTips(_fileListFace.filelistLength);
+								CtrBarManager.instance.showFilelistTips(_fileListFace.filelistLength);
 							}
 						}
 					}

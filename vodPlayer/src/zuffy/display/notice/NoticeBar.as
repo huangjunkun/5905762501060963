@@ -12,6 +12,7 @@
 	import flash.events.FullScreenEvent;
 	import flash.events.Event;
 	import zuffy.core.PlayerCtrl;
+	import zuffy.ctr.manager.CtrBarManager;
 
 	/**
 	 * ...
@@ -94,7 +95,7 @@
 			_dontNoticeText.x = _noticeCloseBtn.x - _dontNoticeText.tWidth - 20;
 			_dontNoticeText.y = 6;
 			
-			if (_mainMc._ctrBar.hidden)
+			if (CtrBarManager.instance.hidden)
 			{
 				this.y = stage.stageHeight - 35;
 			}

@@ -50,12 +50,10 @@
 	import zuffy.interfaces.ICaption;
 
 	public class PlayerCtrl extends Sprite implements ICaption {
-		private const NORMAL_PROGRESSBAR_HEIGTH:uint = 7;
-		private const SMALL_PROGRESSBAR_HEIGTH:uint = 3;
-
+		
 		protected var _setSizeInfo:Object = { 'ratio':'common', 'size':'100', 'ratioValue':0, 'sizeValue':1 };
 		
-		public var _ctrBar:CtrBar;							// 控制栏
+		//private var _ctrBar:CtrBar;							// 控制栏
 		public var _player:Player;							// 播放对象
 		public var _videoMask:VideoMask;				// 视频帷幕
 		private var _eventCaptureScreen:Sprite;	// 触摸屏
@@ -91,7 +89,6 @@
 		private var _isChangeQuality:Boolean = false;//是否影片清晰度切换
 		private var _ratioVideo:Number = 0; //后台自动化预览页面浏览影片原始尺寸添加的参数
 		
-		private var _seekEnable:Boolean = true;
 		private var _isPressKeySeek:Boolean;//是否按住键盘左右键seek
 		private var _isNoEnoughBytes:Boolean;				//是否流量不足
 		private var _videoUrlArray:Array;
@@ -211,9 +208,10 @@
 			_noticeBar = new NoticeBar(this);
 			this.addChild(_noticeBar);
 			
-			// _ctrBar = new CtrBar(tWidth,tHeight,_has_fullscreen, this);
 			CtrBarManager.instance.makeInstance(this, tWidth, tHeight, _has_fullscreen);
-			
+			CtrBarManager.instance.available =  true;
+			CtrBarManager.instance.showPlayOrPauseButton = 'PLAY';
+
 			_mouseControl = new MouseControl(this);
 			_mouseControl.addEventListener("MOUSE_SHOWED", handleMouseInside);
 			_mouseControl.addEventListener("MOUSE_HIDED", handleMouseOutSide);	
@@ -223,8 +221,8 @@
 		}
 		
 		protected function on_stage_RESIZE(e:Event):void{
-			_ctrBar.y = stage.stageHeight - 33;
-			_ctrBar.faceLifting(stage.stageWidth);
+			
+			CtrBarManager.instance.fixedY = stage.stageHeight - 33;
 
 			_player.resizePlayerSize(stage.stageWidth,stage.stageHeight );
 
@@ -250,7 +248,7 @@
 			_isStopNormal = false;
 			_isShowStopFace = false;
 			
-			_ctrBar.dispatchStop();
+			CtrBarManager.instance.dispatchStop();
 			_videoMask.showErrorNotice(VideoMask.playError, errorCode);
 		}
 		
@@ -259,7 +257,7 @@
 		protected function onCloseAddBytesFace(evt:Event):void{
 			if (!_player.isStop)
 			{
-				_ctrBar.dispatchPlay();
+				CtrBarManager.instance.dispatchPlay();
 			}
 		}
 
@@ -269,7 +267,7 @@
 			//暂停
 			if (!_player.isStop)
 			{
-				_ctrBar.dispatchPause();
+				CtrBarManager.instance.dispatchPause();
 			}
 			
 			_noticeBar.setContent(tips, true);
@@ -308,7 +306,7 @@
 			// 登陆异常时，设置开播时间为当前时间，刷新页面时从当前点开播
 			_player.startPosition = _player.time;
 			
-			_ctrBar.dispatchStop();
+			CtrBarManager.instance.dispatchStop();
 			_videoMask.showErrorNotice(VideoMask.invalidLogin);
 		}
 
@@ -366,13 +364,13 @@
 				else
 				{
 					CheckUserManager.instance.isValid = true;
-					_ctrBar.dispatchPlay();
+					CtrBarManager.instance.dispatchPlay();
 				}
 			}
 
 			CheckUserManager.instance.checkUserErrorHandler = function checkUserErrorHandler():void {
 				JTracer.sendMessage("PlayerCtrl -> onCheckUserIOError, check is valid IOError");
-				_ctrBar.dispatchPlay();
+				CtrBarManager.instance.dispatchPlay();
 			}
 
 			CheckUserManager.instance.checkFlowCompleteHandler = function checkFlowCompleteHandler(resultStr:String):void {
@@ -463,27 +461,8 @@
 			stage.addEventListener(KeyboardEvent.KEY_DOWN, keyDownFunc);
 			stage.addEventListener(KeyboardEvent.KEY_UP, keyUpFunc);
 			stage.addEventListener(FullScreenEvent.FULL_SCREEN, on_stage_FULLSCREEN);
-
-			this.addEventListener(ControlEvent.SHOW_CTRBAR, controlEventHandler);
-			
 		}
 
-		private function set seekEnable(enable:Boolean):void
-		{
-			this._seekEnable = enable;
-			this._ctrBar.seekEnable = enable;
-		}
-		
-		private function controlEventHandler(e:ControlEvent):void
-		{
-			if (e.info == 'hidden') {
-				this._ctrBar._barSlider.visible = false;
-				this.seekEnable = false;
-			}else {
-				this.seekEnable = true;
-			}
-		}
-		
 		protected function dontNoticeBytes():void
 		{
 			hideNoticeBar();
@@ -494,8 +473,8 @@
 		{
 			switch(e.type) {
 				case 'lower_qulity':
-					_ctrBar.changeToNextFormat();
-					_ctrBar.isClickBarSeek = false;
+					CtrBarManager.instance.changeToNextFormat();
+					CtrBarManager.instance.isClickBarSeek = false;
 					_isPressKeySeek = false;
 					break;
 				case 'has_qulity':
@@ -506,7 +485,7 @@
 					break;
 				case 'change_quilty':
 					isChangeQuality = true;
-					_ctrBar.isClickBarSeek = false;
+					CtrBarManager.instance.isClickBarSeek = false;
 					_isPressKeySeek = false;
 					break;
 				case 'autio_qulity':
@@ -553,7 +532,7 @@
 					hideNoticeBar();
 
 					if (isChangeQuality == false) {
-						_ctrBar.onStop();
+						CtrBarManager.instance.onStop();
 						isFirstLoad = true;
 						_videoMask.bufferHandle('Stop');
 					}
@@ -561,10 +540,10 @@
 					_isBuffering = false;
 					_player.isBuffer = false;
 					//停止后，不处理为点击拖动条和使用按键进退产生的缓冲，使用bufferLength / bufferTime计算缓冲
-					_ctrBar.isClickBarSeek = false;
+					CtrBarManager.instance.isClickBarSeek = false;
 					_isPressKeySeek = false;
 					//播放完后，显示工具条
-					_ctrBar.show(true);
+					CtrBarManager.instance.show(true);
 					_noticeBar.show(true);
 					//停止后，第一次提示重置为true
 					_isFirstTips = true;
@@ -580,10 +559,10 @@
 					JTracer.sendMessage("PlayerCtrl -> playEventHandler, isChangeQuality:" + isChangeQuality);
 					break;
 				case 'PlayForStage':
-					_ctrBar.dispatchPlay();
+					CtrBarManager.instance.dispatchPlay();
 					break;
 				case 'PauseForStage':
-					_ctrBar.dispatchPause();
+					CtrBarManager.instance.dispatchPause();
 					break;
 				case 'PlayStart':
 					_isPlayStart = true;
@@ -642,7 +621,7 @@
 					if (_player.streamInPlay) {
 						//hwh
 						var numProgress:Number;
-						if ( !(GlobalVars.instance.isXLNetStreamValid == 1) && (_ctrBar.isClickBarSeek || _isPressKeySeek))
+						if ( !(GlobalVars.instance.isXLNetStreamValid == 1) && (CtrBarManager.instance.isClickBarSeek || _isPressKeySeek))
 						{
 							var preloaderDeler:Number = _player.streamInPlay.bufferTime / _player.totalTime * _player.totalByte;
 							preloaderDeler = _player.streamInPlay.bytesTotal == 0 || _player.streamInPlay.bytesTotal > preloaderDeler ? preloaderDeler : _player.streamInPlay.bytesTotal;
@@ -668,10 +647,10 @@
 					}
 					//stage.frameRate = 20;
 					if( !isFirstLoad )
-						this.normalPlayProgressBar();//遇到缓冲，进度条变大
+						CtrBarManager.instance.normalPlayProgressBar();//遇到缓冲，进度条变大
 					break;
 				case 'BufferEnd':
-					_ctrBar.isClickBarSeek = false;
+					CtrBarManager.instance.isClickBarSeek = false;
 					_isPressKeySeek = false;
 					_player.streamInPlay.resume();
 					if (_player.isPause)
@@ -685,7 +664,7 @@
 					_isStopNormal = false;
 					_isShowStopFace = false;
 					
-					_ctrBar.dispatchStop();
+					CtrBarManager.instance.dispatchStop();
 					_videoMask.showErrorNotice();
 					break;
 			}
@@ -725,8 +704,7 @@
 		{
 		}
 		
-		protected function keyDownFunc(event:KeyboardEvent):void
-		{
+		protected function keyDownFunc(event:KeyboardEvent):void {
 			var seekTime:Number;
 			var idx:int;
 			trace( event.keyCode );
@@ -753,13 +731,13 @@
 					trace( "<-----" );
 					if( _player.isStop || !_player.streamInPlay || _player.time <= 0 || _isNoEnoughBytes)
 						return;
-					if( _ctrBar._barBg.height == SMALL_PROGRESSBAR_HEIGTH && !_isFullScreen )
-						normalPlayProgressBar();
+					if( !CtrBarManager.instance.isProgressBarNormal && !_isFullScreen )
+						CtrBarManager.instance.normalPlayProgressBar();
 					if (_player.streamInPlay)
 					{
 						_player.streamInPlay.pause();
 					}
-					_ctrBar._timerBP.stop();
+					CtrBarManager.instance._timerBP.stop();
 					_mouseControl.Timer2.stop();
 					
 					seekTime = _player.time - 5;
@@ -772,12 +750,12 @@
 					
 					seekTime = _player.dragTime[idx];
 					
-					_ctrBar._barSlider.x = (_ctrBar._barWidth - 16) * seekTime / _player.totalTime;
-					if( _ctrBar._barSlider.x < 0 )
-						_ctrBar._barSlider.x = 0;
-					else if( _ctrBar._barSlider.x > _ctrBar._barWidth - 16 )
-						_ctrBar._barSlider.x = _ctrBar._barWidth - 16;
-					_ctrBar._barPlay.width = _ctrBar._barSlider.x - _ctrBar._barPlay.x + 6;
+					CtrBarManager.instance._barSlider.x = (CtrBarManager.instance._barWidth - 16) * seekTime / _player.totalTime;
+					if( CtrBarManager.instance._barSlider.x < 0 )
+						CtrBarManager.instance._barSlider.x = 0;
+					else if( CtrBarManager.instance._barSlider.x > CtrBarManager.instance._barWidth - 16 )
+						CtrBarManager.instance._barSlider.x = CtrBarManager.instance._barWidth - 16;
+					CtrBarManager.instance._barPlay.width = CtrBarManager.instance._barSlider.x - CtrBarManager.instance._barPlay.x + 6;
 					
 					if( _seekDelayTimer )
 					{
@@ -801,7 +779,7 @@
 							JTracer.sendMessage("PlayerCtrl -> keyDownFunc, set bufferType:" + GlobalVars.instance.bufferType);
 							
 							_player.seek(seekTime);
-							_ctrBar._timerBP.start();
+							CtrBarManager.instance._timerBP.start();
 						});
 						_seekDelayTimer2.start();
 					}
@@ -821,13 +799,13 @@
 					trace( "----->" );
 					if( _player.isStop ||!_player.streamInPlay || _player.time <= 0 || _isNoEnoughBytes)
 						return;
-					if( _ctrBar._barBg.height == SMALL_PROGRESSBAR_HEIGTH && !_isFullScreen )
-						normalPlayProgressBar();
+					if( !CtrBarManager.instance.isProgressBarNormal && !_isFullScreen )
+						CtrBarManager.instance.normalPlayProgressBar();
 					if (_player.streamInPlay)
 					{
 						_player.streamInPlay.pause();
 					}
-					_ctrBar._timerBP.stop();
+					CtrBarManager.instance._timerBP.stop();
 					_mouseControl.Timer2.stop();
 					
 					seekTime = _player.time + 5;
@@ -840,12 +818,12 @@
 					
 					seekTime = _player.dragTime[idx];
 					
-					_ctrBar._barSlider.x = (_ctrBar._barWidth - 16) * seekTime / _player.totalTime;
-					if( _ctrBar._barSlider.x < 0 )
-						_ctrBar._barSlider.x = 0;
-					else if( _ctrBar._barSlider.x > _ctrBar._barWidth - 16 )
-						_ctrBar._barSlider.x = _ctrBar._barWidth - 16;
-					_ctrBar._barPlay.width = _ctrBar._barSlider.x - _ctrBar._barPlay.x + 6;
+					CtrBarManager.instance._barSlider.x = (CtrBarManager.instance._barWidth - 16) * seekTime / _player.totalTime;
+					if( CtrBarManager.instance._barSlider.x < 0 )
+						CtrBarManager.instance._barSlider.x = 0;
+					else if( CtrBarManager.instance._barSlider.x > CtrBarManager.instance._barWidth - 16 )
+						CtrBarManager.instance._barSlider.x = CtrBarManager.instance._barWidth - 16;
+					CtrBarManager.instance._barPlay.width = CtrBarManager.instance._barSlider.x - CtrBarManager.instance._barPlay.x + 6;
 					
 					if( _seekDelayTimer2 )
 					{
@@ -869,7 +847,7 @@
 							JTracer.sendMessage("PlayerCtrl -> keyDownFunc, set bufferType:" + GlobalVars.instance.bufferType);
 							
 							_player.seek(seekTime);
-							_ctrBar._timerBP.start();
+							CtrBarManager.instance._timerBP.start();
 						});
 						_seekDelayTimer.start();
 					}
@@ -878,22 +856,22 @@
 				case 38: //up
 					if( _player.isStop )
 						return;
-					this._ctrBar.handleVolumeFromKey( true );
+					CtrBarManager.instance.handleVolumeFromKey( true );
 					break;
 				case 40: //down
 					if( _player.isStop )
 						return;
-					this._ctrBar.handleVolumeFromKey( false );
+					CtrBarManager.instance.handleVolumeFromKey( false );
 					break;
 				case 107: //+
 					if( _player.isStop )
 						return;
-					_ctrBar.handleVolumeFromKey( true );
+					CtrBarManager.instance.handleVolumeFromKey( true );
 					break;
 				case 109: //-
 					if( _player.isStop )
 						return;
-					_ctrBar.handleVolumeFromKey( false );
+					CtrBarManager.instance.handleVolumeFromKey( false );
 					break;
 				
 			}
@@ -901,7 +879,7 @@
 		
 		private function handleAutoPlay(e:Event):void 
 		{
-			_ctrBar.setPlayStatus();
+			CtrBarManager.instance.setPlayStatus();
 		}
 		
 		private function handleInitPause(e:Event):void
@@ -918,7 +896,7 @@
 		
 		private function handleMouseInside(e:Event):void
 		{
-			this.normalPlayProgressBar();
+			CtrBarManager.instance.normalPlayProgressBar();
 			//开播或正常停止不显示侧边栏
 			if (_player.isStartPause || _isStopNormal || _player.time <= 0)
 			{
@@ -940,21 +918,22 @@
 		
 		private function handleMouseHide2( e:Event ):void
 		{
-			this.smallPlayProgressBar();
+			var videoPlaying:Boolean = !_isBuffering || isFirstLoad
+			CtrBarManager.instance.smallPlayProgressBar(videoPlaying);
 		}
 		
 		protected function handleMouseShowAndMove():void
 		{
-			if (_ctrBar._beFullscreen && _ctrBar.hidden)
+			if (CtrBarManager.instance._beFullscreen && CtrBarManager.instance.hidden)
 			{
-				_ctrBar.show();
+				CtrBarManager.instance.show();
 				_noticeBar.show();
 			}
 		}
 		protected function handleMouseHide():void{
-			if (!_ctrBar.beMouseOnFormat)
+			if (!CtrBarManager.instance.beMouseOnFormat)
 			{
-				_ctrBar.hideFormatSelector();
+				CtrBarManager.instance.hideFormatSelector();
 			}
 
 			if (_player.isStartPause || _isStopNormal || _player.time <= 0)
@@ -962,54 +941,17 @@
 				return;
 			}
 			
-			if (_ctrBar._beFullscreen && !_ctrBar.beMouseOn)
+			if (CtrBarManager.instance._beFullscreen && !CtrBarManager.instance.beMouseOn)
 			{
-				_ctrBar.hide();
+				CtrBarManager.instance.hide();
 				_noticeBar.hide();
 			}
-			if (_ctrBar.beMouseOn)
+			if (CtrBarManager.instance.beMouseOn)
 			{
 				Mouse.show();
 			}
 		}
 
-		private function normalPlayProgressBar():void
-		{
-			if( _ctrBar._barBg.height == this.SMALL_PROGRESSBAR_HEIGTH )
-			{
-				if(this._seekEnable){
-					this._ctrBar._barSlider.visible = true;
-				}
-				this._ctrBar._barBg.height = this.NORMAL_PROGRESSBAR_HEIGTH;
-				this._ctrBar._barBuff.height = this.NORMAL_PROGRESSBAR_HEIGTH;
-				this._ctrBar._barPlay.height = this.NORMAL_PROGRESSBAR_HEIGTH;
-				this._ctrBar._barPreDown.height = this.NORMAL_PROGRESSBAR_HEIGTH;
-				
-				_ctrBar._barBg.y = -6 ;
-				_ctrBar._barBuff.y = -6;
-				_ctrBar._barPlay.y = -6;
-				_ctrBar._barPreDown.y = -6 ;
-			}
-		}
-		private function smallPlayProgressBar():void
-		{
-			if( _ctrBar._barBg.height ==  NORMAL_PROGRESSBAR_HEIGTH )
-			{
-				if( !_isBuffering || isFirstLoad || _ctrBar._btnPauseBig.visible )
-				{
-					this._ctrBar._barSlider.visible =false;
-					this._ctrBar._barBg.height = this.SMALL_PROGRESSBAR_HEIGTH;
-					_ctrBar._barBg.y = -2;
-					this._ctrBar._barBuff.height = this.SMALL_PROGRESSBAR_HEIGTH;
-					_ctrBar._barBuff.y = -2;
-					this._ctrBar._barPlay.height = this.SMALL_PROGRESSBAR_HEIGTH;
-					_ctrBar._barPlay.y  = -2;
-					this._ctrBar._barPreDown.height = this.SMALL_PROGRESSBAR_HEIGTH;
-					_ctrBar._barPreDown.y = -2;									
-				}
-			}
-		}
-		
 		private function adaptRealSize():void 
 		{
 			var _stageHeight:int = _isFullScreen ? stage.stageHeight : stage.stageHeight - 35;
@@ -1081,8 +1023,8 @@
 		private function on_stage_FULLSCREEN(e:FullScreenEvent):void 
 		{
 			JTracer.sendMessage('fullScreen=' + e.fullScreen + ',e.target='+e.currentTarget);
-			_ctrBar.fullscreen = e.fullScreen;
-			_ctrBar.show(true);
+			CtrBarManager.instance.fullscreen = e.fullScreen;
+			CtrBarManager.instance.show(true);
 			_noticeBar.show(true);
 			_mouseControl.fullscreen = e.fullScreen;
 			addJustStageFullScreen(_player.time, e.fullScreen);
@@ -1096,7 +1038,7 @@
 				changePlayerSize();
 				_playFullWidth = _player.width;
 				_playFullHeight = _player.height;
-				_ctrBar.y = stage.stageHeight - 33;
+				CtrBarManager.instance.fixedY = stage.stageHeight - 33;
 			}else {
 				ExternalInterface.call("flv_playerEvent", "onExitFullScreen");
 				_isFullScreen = false;
@@ -1107,23 +1049,23 @@
 		public function flv_play() :void
 		{
 			JTracer.sendMessage("PlayerCtrl -> js回调flv_play, 播放影片");
-			_ctrBar.available = true;
-			_ctrBar.visible = true;
-			_ctrBar.dispatchPlay();
+			CtrBarManager.instance.available = true;
+			CtrBarManager.instance.visible = true;
+			CtrBarManager.instance.dispatchPlay();
 		}
 		public function flv_pause():void 
 		{
 			JTracer.sendMessage("PlayerCtrl -> js回调flv_pause, 暂停影片");
 			if (!_player.isPause && !_player.isStartPause)
 			{
-				_ctrBar.dispatchPause();
+				CtrBarManager.instance.dispatchPause();
 			}
 		}
 		
 		public function flv_stop():void 
 		{
 			JTracer.sendMessage('PlayerCtrl -> js回调flv_stop, 停止影片');
-			_ctrBar.dispatchStop();
+			CtrBarManager.instance.dispatchStop();
 			_videoMask.bufferHandle('Stop');
 		}
 		public function flv_close() :void
@@ -1229,7 +1171,7 @@
 			//点播时默认流量充足
 			_isNoEnoughBytes = false;
 			_videoUrlArray = arr;
-			_ctrBar.visible = true;
+			CtrBarManager.instance.visible = true;
 			//重置宽高比例
 			//_setSizeInfo['ratio'] = 'common';
 			//去掉filter
@@ -1250,62 +1192,18 @@
 			// 初始化截图
 		}
 		
-		public function flv_stageVideoInfo():int
-		{
-			return 0;
-		}
-		
 		public function flv_getNsCurrentFps():Number
 		{
 			var fps:Number = _player.nsCurrentFps;
 			JTracer.sendMessage("PlayerCtrl -> js回调flv_getNsCurrentFps, 返回影片帧率:" + fps);
 			return fps;
 		}
-		
-		public function flv_getCurrentFps():Number
-		{
-			JTracer.sendMessage("PlayerCtrl -> js回调flv_getCurrentFps, 返回swf帧率:" + stage.frameRate);
-			return stage.frameRate;
-		}
-		
+				
 		public function flv_changeStageVideoToVideo():void
 		{
 			JTracer.sendMessage("PlayerCtrl -> js回调flv_changeStageVideoToVideo, stageVideo to video");
 		}
-		
-		public function flv_getPlayUrl():String
-		{
-			JTracer.sendMessage("PlayerCtrl -> js回调flv_getPlayUrl, 返回播放地址:" + _player.playUrl);
-			return _player.playUrl;
-		}
-		
-		public function flv_getStreamBytesLoaded():Number
-		{
-			var bytes:Number = 0;
-			if (_player.streamInPlay) {
-				bytes = _player.streamInPlay.bytesLoaded;
-			}
-			JTracer.sendMessage("PlayerCtrl -> js回调flv_getStreamBytesLoaded, 返回影片已下载数:" + bytes);
-			return bytes;
-		}
-				
-		private function flv_getBufferBugInfo():String
-		{
-			var str:String = '';
-			if (_player.streamInPlay) {
-				str = String(_player.streamInPlay.bufferLength) + '_' + String(_player.streamInPlay.bufferTime);
-			}
-			JTracer.sendMessage("PlayerCtrl -> js回调flv_getBufferBugInfo, 返回:" + str);
-			return str;
-		}
-		
-		private function flv_getBufferLength():Number
-		{
-			var bt:Number = _player.streamBufferTime;
-			JTracer.sendMessage("PlayerCtrl -> js回调flv_getBufferLength, 返回缓冲时长:" + bt);
-			return  bt;
-		}
-		
+
 		public function setBufferTime(time:Number):void
 		{
 			JTracer.sendMessage("PlayerCtrl -> js回调setBufferTime, 设置缓冲时间_player.bufferTime:" + time);
@@ -1344,39 +1242,20 @@
 				ExternalInterface.addCallback('flv_setNoticeMsg', flv_setNoticeMsg);
 
 				ExternalInterface.addCallback('flv_setIsChangeQuality', flv_setIsChangeQuality);
-				ExternalInterface.addCallback('flv_getBufferLength', flv_getBufferLength);
-				ExternalInterface.addCallback('flv_getBufferBugInfo', flv_getBufferBugInfo);
-				ExternalInterface.addCallback('flv_stageVideoInfo', flv_stageVideoInfo);
-				ExternalInterface.addCallback('flv_getNsCurrentFps', flv_getNsCurrentFps);
-				ExternalInterface.addCallback('flv_getCurrentFps', flv_getCurrentFps);
-				ExternalInterface.addCallback('flv_changeStageVideoToVideo', flv_changeStageVideoToVideo);
-				ExternalInterface.addCallback('flv_getPlayUrl', flv_getPlayUrl);
-				ExternalInterface.addCallback('flv_getStreamBytesLoaded', flv_getStreamBytesLoaded);
 				ExternalInterface.addCallback('flv_closeNetConnection', flv_closeNetConnection);
 				ExternalInterface.addCallback('flv_showFormats', flv_showFormats);
 				ExternalInterface.addCallback('flv_seek', flv_seek);
-				ExternalInterface.addCallback('flv_setBarAvailable', flv_setBarAvailable);
-				ExternalInterface.addCallback('flv_setIsShowNoticeClose', flv_setIsShowNoticeClose);
-				ExternalInterface.addCallback('flv_getFlashVersion', flv_getFlashVersion);
+			
 				ExternalInterface.addCallback('flv_getTimePlayed', flv_getTimePlayed);
 				ExternalInterface.addCallback('flv_setFeeParam', flv_setFeeParam);
 				ExternalInterface.addCallback('flv_playOtherFail', flv_playOtherFail);
-				ExternalInterface.addCallback('flv_showBarNotice', flv_showBarNotice);
 				ExternalInterface.addCallback('flv_setToolBarEnable', flv_setToolBarEnable);
 				ExternalInterface.addCallback('flv_ready', flv_ready);
 			}
 		}
 
 		public function flv_ready():Boolean{return true;}
-				
-		public function flv_showBarNotice(str:String, showTime:uint = 0):void
-		{
-			var urlStr:String = "PlayerCtrl -> js回调flv_showBarNotice, 显示ctrBar提示，提示文字:" + str + ", 显示时间:" + showTime;
-			JTracer.sendMessage(urlStr);
-			
-			_ctrBar.showBarNotice(str, showTime);
-		}
-				
+		
 		public function flv_playOtherFail(boo:Boolean, tips:String = ""):void
 		{
 			var urlStr:String = "PlayerCtrl -> js回调flv_playOtherFail, 切换新视频, 是否切换成功:" + boo + ", tips:" + tips;
@@ -1392,11 +1271,11 @@
 				_isStopNormal = false;
 				_isShowStopFace = false;
 				
-				_ctrBar.dispatchStop();
+				CtrBarManager.instance.dispatchStop();
 				_videoMask.showErrorNotice(VideoMask.exchangeError, null, tips);
 				
 				var formatObj:Object = { "y": { "checked":false, "enable":false }, "c": { "checked":false, "enable":false }, "p": { "checked":false, "enable":false }, "g": { "checked":false, "enable":false }};
-				_ctrBar.showFormatLayer(formatObj);
+				CtrBarManager.instance.showFormatLayer(formatObj);
 			}
 		}
 		
@@ -1462,15 +1341,15 @@
 			GlobalVars.instance.hasSubtitle = Number(obj.subtitle) == 1 ? true : false;
 			
 			//没有内嵌字幕时，底部显示字幕按钮
-			if (_ctrBar)
+			if (CtrBarManager.instance)
 			{
 				if (!GlobalVars.instance.hasSubtitle)
 				{
-					_ctrBar.showCaptionBtn();
+					CtrBarManager.instance.showCaptionBtn();
 				}
 				else
 				{
-					_ctrBar.hideCaptionBtn();
+					CtrBarManager.instance.hideCaptionBtn();
 				}
 			}
 		}
@@ -1495,49 +1374,24 @@
 			
 			GlobalVars.instance.enableShare = obj.enableShare;
 			
-			if (_ctrBar)
+			if (CtrBarManager.instance)
 			{
-				_ctrBar.enableFileList = obj.enableFileList || false;
+				CtrBarManager.instance.enableFileList = obj.enableFileList || false;
 			}
 		}
-				
-		public function flv_getFlashVersion():String
-		{
-			var ver:String = Capabilities.version;
-			JTracer.sendMessage("PlayerCtrl -> js回调flv_getFlashVersion, 获取flashplayer版本号, 版本号为:" + ver);
-			return ver;
-		}
-		
-		public function flv_setIsShowNoticeClose(flag:Boolean):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> js回调flv_setIsShowNoticeClose, 设置是否显示关闭按钮:" + flag);
-			if (_noticeBar)
-			{
-				_noticeBar.showCloseBtn(flag);
-			}
-		}
-		
-		public function flv_setBarAvailable(flag:Boolean):void
-		{
-			JTracer.sendMessage("PlayerCtrl -> js回调flv_setBarAvailable, 设置控制条是否可拖动:" + flag);
-			if (_ctrBar)
-			{
-				_ctrBar.barEnabled = flag;
-			}
-		}
-						
+										
 		private function getPlayProgress(isTime:Boolean):Number
 		{
-			var result:Number = _ctrBar.getPlayProgress(isTime);
+			var result:Number = CtrBarManager.instance.getPlayProgress(isTime);
 			JTracer.sendMessage("PlayerCtrl -> js回调getPlayProgress, 设置是否返回播放时间(false返回播放百分比):" + isTime + ", 返回的播放时间或播放百分比为:" + result);
 			return result;
 		}
 		
 		protected function hideSideChangeQuilty():void
 		{
-			if (_ctrBar._beFullscreen)
+			if (CtrBarManager.instance._beFullscreen)
 			{
-				_ctrBar.hide();
+				CtrBarManager.instance.hide();
 				_noticeBar.hide();
 			}
 		}
@@ -1570,7 +1424,7 @@
 			_isChangeQuality = boo;
 			_player.isChangeQuality = boo;
 			_videoMask.isQualityLoading = boo;
-			_ctrBar.isChangeQuality = boo;
+			CtrBarManager.instance.isChangeQuality = boo;
 		}
 		
 		public function get isChangeQuality():Boolean
@@ -1587,7 +1441,7 @@
 		public function flv_showFormats(formats:Object):void
 		{
 			_formatsObj = formats;
-			_ctrBar.showFormatLayer(formats);
+			CtrBarManager.instance.showFormatLayer(formats);
 		}
 		
 		public function flv_seek(time:Number = 0):void
@@ -1698,9 +1552,9 @@
 			if( _isFullScreen )
 			{
 				if( delta > 0 )
-					_ctrBar.handleVolumeFromKey( true );
+					CtrBarManager.instance.handleVolumeFromKey( true );
 				else
-					_ctrBar.handleVolumeFromKey( false );
+					CtrBarManager.instance.handleVolumeFromKey( false );
 			}
 		}
 		public function showHighSpeedTips(higherFormat:String, speed:Number):void

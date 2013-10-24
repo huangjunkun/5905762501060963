@@ -39,6 +39,7 @@
 	import zuffy.events.PlayEvent;
 	import zuffy.events.SetQulityEvent;
 	import zuffy.events.sizeEvent;
+	import zuffy.ctr.manager.CtrBarManager;
 	
 	public class Player extends Sprite
 	{
@@ -181,13 +182,13 @@
 		{
 			if (streamInPlay)
 			{
-				if (!main_mc._ctrBar.isVolume)
+				if (!CtrBarManager.instance.isVolume)
 				{
 					this.volum = 0;
 					return;
 				}
 				var _so:SharedObject=SharedObject.getLocal("kkV");
-				var vv:Number = _so.data.v ? _so.data.v : (main_mc._ctrBar.cacheVolume);
+				var vv:Number = _so.data.v ? _so.data.v : (CtrBarManager.instance.cacheVolume);
 				this.volum = vv;
 			}
 		}
@@ -256,7 +257,7 @@
 				
 			}
 			
-			main_mc._ctrBar.formatShowBtn = arr[0].format || 'p';
+			CtrBarManager.instance.formatShowBtn = arr[0].format || 'p';
 			dispatchEvent(new ControlEvent(ControlEvent.SHOW_CTRBAR, 'show'));
 		}
 		
@@ -444,9 +445,9 @@
 			ExternalInterface.call("flv_playerEvent","onPlayStatusChanged");
 			initialDownLoadTimer();
 			
-			if (main_mc._ctrBar._timerBP && main_mc._ctrBar._timerBP.running == false) 
+			if (CtrBarManager.instance._timerBP && CtrBarManager.instance._timerBP.running == false) 
 			{
-				main_mc._ctrBar._timerBP.start();
+				CtrBarManager.instance._timerBP.start();
 			}
 			
 			videoUrlArr[0].start = 0;
@@ -481,9 +482,9 @@
 			initialDownLoadTimer();
 			initialAppendTimer();
 			
-			if (main_mc._ctrBar._timerBP && main_mc._ctrBar._timerBP.running == false) 
+			if (CtrBarManager.instance._timerBP && CtrBarManager.instance._timerBP.running == false) 
 			{
-				main_mc._ctrBar._timerBP.start();
+				CtrBarManager.instance._timerBP.start();
 			}
 			
 			videoUrlArr[0].start = 0;
@@ -521,9 +522,9 @@
 			
 			this.visible = false;
 			//影片停止播放了，或者切换不同清晰度的影片，停止_timerBP，播放后再开始
-			if (main_mc._ctrBar._timerBP && main_mc._ctrBar._timerBP.running) 
+			if (CtrBarManager.instance._timerBP && CtrBarManager.instance._timerBP.running) 
 			{
-				main_mc._ctrBar._timerBP.stop();
+				CtrBarManager.instance._timerBP.stop();
 			}
 			isStop = true;
 			isStartPause = false;
@@ -579,9 +580,9 @@
 			clearSocket();
 			this.visible = false;
 			//影片停止播放了，或者切换不同清晰度的影片，停止_timerBP，播放后再开始
-			if (main_mc._ctrBar._timerBP && main_mc._ctrBar._timerBP.running) 
+			if (CtrBarManager.instance._timerBP && CtrBarManager.instance._timerBP.running) 
 			{
-				main_mc._ctrBar._timerBP.stop();
+				CtrBarManager.instance._timerBP.stop();
 			}
 			isStop = true;
 			isStartPause = false;
@@ -634,9 +635,9 @@
 			clearSocket();
 			this.visible = false;
 			//影片停止播放了，或者切换不同清晰度的影片，停止_timerBP，播放后再开始
-			if (main_mc._ctrBar._timerBP && main_mc._ctrBar._timerBP.running) 
+			if (CtrBarManager.instance._timerBP && CtrBarManager.instance._timerBP.running) 
 			{
-				main_mc._ctrBar._timerBP.stop();
+				CtrBarManager.instance._timerBP.stop();
 			}
 			isStop = true;
 			isStartPause = false;
@@ -1120,9 +1121,9 @@
 			dispatchEvent(new PlayEvent(PlayEvent.BUFFER_START));
 			streamInPlay.resume();
 			isPause = false;
-			main_mc._ctrBar._btnPause.visible = true;
-			main_mc._ctrBar._btnPlay.visible = false;
-			main_mc._ctrBar._btnPauseBig.visible = false;
+			CtrBarManager.instance._btnPause.visible = true;
+			CtrBarManager.instance._btnPlay.visible = false;
+			CtrBarManager.instance._btnPauseBig.visible = false;
 		}
 
 		public function seek(time:Number, isKey:Boolean = false):void
@@ -1235,7 +1236,7 @@
 					}
 					streamInPlay.resume();
 					isPause = false;
-					main_mc._ctrBar._btnPauseBig.visible = false;
+					CtrBarManager.instance._btnPauseBig.visible = false;
 					dispatchEvent(new PlayEvent(PlayEvent.BUFFER_START));
 				}
 				else
@@ -1332,11 +1333,11 @@
 		}
 
 		private function startControllerTimer():void{
-			if (main_mc._ctrBar._timerBP && main_mc._ctrBar._timerBP.running == false)
+			if (CtrBarManager.instance._timerBP && CtrBarManager.instance._timerBP.running == false)
 			{
 				JTracer.sendMessage('NetStream.Play.Start _timerBP start.')
-				main_mc._ctrBar._timerBP.reset();
-				main_mc._ctrBar._timerBP.start();
+				CtrBarManager.instance._timerBP.reset();
+				CtrBarManager.instance._timerBP.start();
 			}
 		}
 		
@@ -1369,8 +1370,8 @@
 					_progressCacheTime = 0;
 					//JTracer.sendLoaclMsg('stream_Inplay.bufferTime:' + streamInPlay.bufferTime+',stream_Inplay.bufferLength'+streamInPlay.bufferLength + ',stream_Inplay.bytes:' + streamInPlay.bytesLoaded);
 					fixedTime = -1;
-					main_mc._ctrBar._btnPause.visible = true;
-					main_mc._ctrBar._btnPlay.visible = false;
+					CtrBarManager.instance._btnPause.visible = true;
+					CtrBarManager.instance._btnPlay.visible = false;
 					break;	
 				case "NetStream.Play.StreamNotFound":
 					/*_errorInfo = "302";
@@ -1510,9 +1511,9 @@
 			JTracer.sendMessage("Player -> seekOutBuffer, start=" + fixedByte + fixedByteEnd);
 			
 			isPause = false;
-			main_mc._ctrBar._btnPause.visible = true;
-			main_mc._ctrBar._btnPlay.visible = false;
-			main_mc._ctrBar._btnPauseBig.visible = false;
+			CtrBarManager.instance._btnPause.visible = true;
+			CtrBarManager.instance._btnPlay.visible = false;
+			CtrBarManager.instance._btnPauseBig.visible = false;
 			
 			JTracer.sendMessage("Player -> seekOutBuffer, start spliceUpdate");
 			_sliceStream.spliceUpdate(fixedTime);
@@ -1788,10 +1789,10 @@
 		
 		private function downloadStream(url:String, start_pos:uint, end_pos:uint):void
 		{
-			if (main_mc._ctrBar._timerBP && main_mc._ctrBar._timerBP.running == false)
+			if (CtrBarManager.instance._timerBP && CtrBarManager.instance._timerBP.running == false)
 			{
-				main_mc._ctrBar._timerBP.reset();
-				main_mc._ctrBar._timerBP.start();
+				CtrBarManager.instance._timerBP.reset();
+				CtrBarManager.instance._timerBP.start();
 			}
 			
 			StreamList.clearCurList();
