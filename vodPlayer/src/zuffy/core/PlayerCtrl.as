@@ -1589,177 +1589,217 @@
 		}
 
 		private var _curPlay:Object;
+		private var _fileType:String;
+		private var _fileList:Object;
+		private var _vod_info:Array;
+		private var _cacheData:Array;	// 缓存请求列表
+		private var _curName:String;
+		private var _lastFormat:String;
+		private var _lastPos:Number;
+		
 		public function queryBack(req:Object):void {
-				_curPlay = req;
-				// 不能播放时调用flash接口
-				var tellFlashFail = function(){
-				/*_INSTANCE.attachEvent(_INSTANCE,'onload',function(_o,_e){
-				that.playerInstance = _INSTANCE.playerInstance;
-				if(DEBUG)
-				that.playerInstance.showDebug();
-				that.initEvent();
-				that.playerInstance.playOtherFail(false,_genErrorMsg(req,1));
-				var param = {
-				"description":"请选择字幕文件(*.srt、*.ass)",
-				"extension":"*.srt;*.ass",
-				"limitSize":6*1024*1024,
-				"uploadURL":DYSERVER+"interface/upload_file/?cid="+cid,
-				"timeOut":"30"
-				};
-				that.playerInstance.setCaptionParam(param);
+			_curPlay = req;
+			// 不能播放时调用flash接口
+			var tellFlashFail = function(){
+			/*_INSTANCE.attachEvent(_INSTANCE,'onload',function(_o,_e){
+			that.playerInstance = _INSTANCE.playerInstance;
+			if(DEBUG)
+			that.playerInstance.showDebug();
+			that.initEvent();
+			that.playerInstance.playOtherFail(false,_genErrorMsg(req,1));
+			var param = {
+			"description":"请选择字幕文件(*.srt、*.ass)",
+			"extension":"*.srt;*.ass",
+			"limitSize":6*1024*1024,
+			"uploadURL":DYSERVER+"interface/upload_file/?cid="+cid,
+			"timeOut":"30"
+			};
+			that.playerInstance.setCaptionParam(param);
 
-				that.playerInstance.setToolBarEnable({enableShare:false,enableFileList:playerFunSettings.enableFileList,enableDownload:false,enableSet:false,enableCaption:false,enableOpenWindow:playerFunSettings.enableOpenWindow,enableTopBar:playerFunSettings.enableTopBar,enableFeedback:true});
-				that.setFeeParam(0);
-				that.setShareParam();
-				});
-				var id = box_obj.getAttribute('id');
-				_INSTANCE.printObject(id,false,'100%','100%','',flashvars);
-				try{window[success].call();}catch(e){}*/
-				};
+			that.playerInstance.setToolBarEnable({enableShare:false,enableFileList:playerFunSettings.enableFileList,enableDownload:false,enableSet:false,enableCaption:false,enableOpenWindow:playerFunSettings.enableOpenWindow,enableTopBar:playerFunSettings.enableTopBar,enableFeedback:true});
+			that.setFeeParam(0);
+			that.setShareParam();
+			});
+			var id = box_obj.getAttribute('id');
+			_INSTANCE.printObject(id,false,'100%','100%','',flashvars);
+			try{window[success].call();}catch(e){}*/
+			};
 
-				//不能播放的逻辑
-				if( typeof req.status == 'undefined' || req.status != 0 ) {
-					try {
-						// 资源不能秒播则上报
-						if(req.ret == 0){
+			//不能播放的逻辑
+			if( typeof req.status == 'undefined' || req.status != 0 ) {
+				try {
+					// 资源不能秒播则上报
+					if(req.ret == 0){
 
-							var errGcid = Tools.getUserInfo('gcid') || "";
+						var errGcid = Tools.getUserInfo('gcid') || "";
 
-							var errUrl = !errGcid ? _curPlayUrl : "";
+						var errUrl = !errGcid ? _curPlayUrl : "";
 
-							Tools.stat([
-							'f=playAtOnceFail', 
-							'&gid=' + errGcid, 
-							'&url=' + errUrl, 
-							'&isTryPlay=false', 
-							'&status='+ req.status, 
-							'&transWait=' + req.trans_wait 
-							].join(''));
+						Tools.stat([
+						'f=playAtOnceFail', 
+						'&gid=' + errGcid, 
+						'&url=' + errUrl, 
+						'&isTryPlay=false', 
+						'&status='+ req.status, 
+						'&transWait=' + req.trans_wait 
+						].join(''));
 
+					}
+
+				}catch(e){}
+
+				if(req.ret == 11){
+
+					_showErrorTip(_genErrorMsg(req));
+					// sessionid过期，跳去中间页登录
+					if(int(Tools.getUserInfo('vodPermit')) == 4){
+						var search:String = ExternalInterface.call('function(){return location.search;}');
+						var goUrl = "http://vod.xunlei.com/play.html"+ search +"#action=sidExpired";
+						Tools.windowOpen(goUrl, "_self");
+					}
+
+				}
+				// 普通url在页面中提示
+				// 非多视频BT文件
+				else if( _fileType == 'url' || !_fileList || _fileList.subfile_list.length <= 1 ){	
+					_showErrorTip(_genErrorMsg(req));
+				}
+				// 含多视频BT文件的在bt中提示
+				else{
+					tellFlashFail();
+				}
+			}
+      else{
+				if(_fileType == 'url'){
+					_fileList = {
+						"userid":Tools.getUserInfo('userid'),
+						"info_hash":"",
+						"subfile_list":[{
+								"name":_curPlay.src_info.file_name,
+								"index":-1,
+								"url_hash":_curPlay.url_hash
+							}]
+					};
+				}
+
+				_cacheData = _cacheReqData(_cacheData, req, _curPlay.url_hash);
+
+				var info:Array = req.vodinfo_list;
+				var urlFormat:String = 'p' //$PU("format");
+				var format_types:Object = {
+							'p' : 0,
+							'g' : 1,
+							'c' : 2
 						}
+				// 默认值
+				if(urlFormat != 'c' && urlFormat != 'g' && urlFormat != 'p') {
+					urlFormat = 'p';
+				}
+				
+				_vod_info = info;
 
+				GlobalVars.instance.hasSubtitle = info[0].has_subtitle || 0;
+				
+				var initFormat:String;
+
+				function readyToPlay():void {
+					if(!initFormat){
+						try{
+							initFormat = ExternalInterface.call("G_PLAYER_INSTANCE.getStorageData", "defaultFormat") || 'p';
+						}catch(e){
+							initFormat = 'p';
+						}
+					}
+
+					initFormat = initFormat.match(/^(g|p|c)$/) ? initFormat : 'p';
+					var formatNum:int = info.length;
+
+					if((formatNum == 1 && (initFormat == 'g' || initFormat == 'c')))
+						initFormat = 'p';
+					else if ((formatNum == 2 && initFormat == 'c'))
+						initFormat = 'g';
+
+					var initUrl:String = "";
+					var initUrls:Array = [];
+					var curInfo:Object = {};
+					if(parseInt(format_types[urlFormat]) <= formatNum){
+						initFormat = urlFormat || initFormat;
+					}
+
+					curInfo = info[0];
+					initUrl = info[0].vod_url;
+					initUrls = info[0].vod_urls;
+
+					try {
+						if(initFormat == 'g' ){
+							curInfo = info[1];
+							initUrl = info[1].vod_url;
+							initUrls = info[1].vod_urls;
+						}
+						else if(initFormat == 'c'){
+							curInfo = info[2];
+							initUrl = info[2].vod_url
+							initUrls = info[2].vod_urls;
+						}
 					}catch(e){}
 
-					if(req.ret == 11){
+					// 在给flash filename之前判断一下，如果filename为空则用点播请求的
+					_curName = _curPlay.src_info.file_name;
 
-						_showErrorTip(_genErrorMsg(req));
-						// sessionid过期，跳去中间页登录
-						if(Tools.getUserInfo('vodPermit') == 4){
-							var goUrl = "http://vod.xunlei.com/play.html" + location.search + "#action=sidExpired";
-							Tools.windowOpen(goUrl, "_self");
-						}
+					// 设置控制栏清晰度状态
+					_getFormats();
+					
+					flv_playOtherFail(true);
 
-					}
-					// 普通url在页面中提示
-					// 非多视频BT文件
-					else if( _fileType == 'url' || that.fileList == null || that.fileList.subfile_list.length <=1 ){	
-						_showErrorTip(_genErrorMsg(req));
-					}
-					// 含多视频BT文件的在bt中提示
-					else{
-						tellFlashFail();
-					}
+					//startPlay(initUrl, initFormat, _lastPos, 0, initUrls, curInfo);
 				}
-        else{
-					if(_fileType == 'url'){
-						fileList = {
-							"userid":Tools.getUserInfo('userid'),
-							"info_hash":"",
-							"subfile_list":[{
-									"name":_curPlay.src_info.file_name,
-									"index":-1,
-									"url_hash":_curPlay.url_hash
-								}]
-						};
-					}
-            
-            if(that.originalPlay==null)
-                that.originalPlay = req;
-            that.cacheData = that.cacheReqData(that.cacheData,req,that._curPlay.url_hash);
-        var info = req.vodinfo_list
-        ,	urlFormat = $PU("format")
-        ,	format_types = {
-	        'p' : 0,
-        	'g' : 1,
-        	'c' : 2
-        }
-      	!( urlFormat == 'c' || urlFormat == 'g' || urlFormat == 'p' ) && ( urlFormat = void(0) );
-            that.vod_info = info;
-        that.hasSubtitle = info[0].has_subtitle || 0;
 
-            _INSTANCE.attachEvent(_INSTANCE,'onload',function(_o,_e){
-                playerLoadTime.flashLoadEnd = new Date().getTime();
-                that.playerInstance = _INSTANCE.playerInstance;
-                if(DEBUG)
-                    that.playerInstance.showDebug();
-
-                if(!initFormat)
-	            try{
-		            initFormat = that.playerInstance.getDefaultFormat() || 'p';
-	            }catch(e){initFormat = 'p'}
-            initFormat = initFormat.match(/^(g|p|c)$/) ? initFormat : 'p';
-
-                that.initEvent();
-                var formatNum = info.length;
-                if( (formatNum==1 && (initFormat=='g' || initFormat=='c') )  )
-                    initFormat = 'p';
-                else if ( (formatNum==2 && initFormat=='c') )
-                    initFormat = 'g';
-
-                var initUrl = "";
-                var initUrls = [];
-                var curInfo = {};
-                (parseInt( format_types[urlFormat] ) <= formatNum) && ( initFormat = urlFormat || initFormat );
-			curInfo = info[0];
-                initUrl = info[0].vod_url;
-                initUrls = info[0].vod_urls;
-                try{
-                    if(initFormat == 'g' ){
-                        curInfo = info[1];
-						initUrl = info[1].vod_url;
-                        initUrls = info[1].vod_urls;
-                    }
-					else if(initFormat == 'c'){
-                        curInfo = info[2];
-						initUrl = info[2].vod_url
-                        initUrls = info[2].vod_urls;
-                    }
-                }
-                catch(e){}
-
-                //试播登录时如果记录时间点.
-                if( tryPlayLastPos >= 0 ){
-                    that.lastPos = tryPlayLastPos;
-                    tryPlayLastPos = -1;
-                }
-
-                // 在给flash filename之前判断一下，如果filename为空则用点播请求的
-                if(!that.curName)
-                    that.curName = decode(that._curPlay.src_info.file_name);
-                playerLoadTime.startFlash = new Date().getTime();
-                that.startPlay(initUrl, initFormat, that.lastPos, 0, initUrls, curInfo);
-                that.getFormats();	/* js主动调用flash改变清晰度按钮的接口，opera下flash触发onGetFormats 有问题 */
-                that.playerInstance.playOtherFail(true);
-                that.getCaption(that._curPlay.src_info.gcid,that._curPlay.src_info.cid);
-                that.setShareParam();
-                that.curName = decode(that._curPlay.src_info.file_name);
-            });
-            var id = box_obj.getAttribute('id');
-            playerLoadTime.flashLoadStart = new Date().getTime();
-            _INSTANCE.printObject(id,false,'100%','100%','',flashvars);
-            try{window[success].call();}catch(e){}
-        }
-        //上报
-        if(that._curPlay.src_info)
-            var g = that._curPlay.src_info.gcid
-        else
-            var g = '';
-        setTimeout(function(){
-            // 延后上报（延迟到onload之后），暂时解决stat上报慢影响chrome浏览器flash加载的问题
-            try{that.stat({f:'svrresp',ret:that._curPlay.ret,pt:that._curPlay.status,gcid:g}); }catch(e){}
-        }, 3000);
+				readyToPlay();
 
 			}
+
+		}
+		private function _startPlay():void {
+			
+		}
+		private function _getFormats(tformat:String = null):void {
+			
+			var format = tformat || this._lastFormat;
+			var norms={
+				c:{checked:false,enable:false},
+				g:{checked:false,enable:false},
+				p:{checked:false,enable:false},
+				y:{checked:false,enable:false}
+			};
+			norms.g.enable = typeof(this._vod_info[1]) != 'undefined';
+			norms.c.enable = typeof(this._vod_info[2]) != 'undefined';
+			norms.p.enable = true;
+			norms[format].checked = true;
+			flv_showFormats(norms);
+		}
+
+		private function _cacheReqData(tcacheData:Array, itemData:Object, uniqueValue:String):Array {
+			
+			var cacheData:Array = tcacheData || [];
+			var cacheDataLength = cacheData.length;
+
+			if(cacheDataLength > 0 && cacheDataLength < 6) {
+				var tmpData = [];
+				for(var i = 0; i < cacheDataLength; i++) {
+					if(cacheData[i].url_hash && cacheData[i].url_hash != uniqueValue){
+						tmpData.push(cacheData[i]);
+					}
+				}
+				cacheData = tmpData;
+			}
+
+			cacheData.push(itemData);
+			
+			if(cacheData.length == 5)
+				cacheData.shift();
+			
+			return cacheData;
+		}
 
 		// 显示错误提示  
 		private function _showErrorTip(msg:String):void {
@@ -1767,8 +1807,8 @@
 		}
 
 		// 过滤错误信息
-		private function _genErrorMsg(req, inPlayer:Boolean = false):void {
-			
+		private function _genErrorMsg(req, inPlayer:Boolean = false):String {
+			return ''
 		}
 
 		/*==============================================
