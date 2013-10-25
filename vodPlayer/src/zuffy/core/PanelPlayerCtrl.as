@@ -1005,17 +1005,7 @@
 		
 		override protected function handleMouseHide():void
 		{
-			/*
-			if (!_toolTopFace.hidden && !_toolTopFace.beMouseOn && !_player.isPause)
-			{
-				_toolTopFace.hide();
-			}
-			if (_toolTopFace.beMouseOn)
-			{
-				Mouse.show();
-			}
-			*/
-			
+			super.handleMouseHide();
 			if (!_toolRightFace.hidden && !_toolRightFace.beMouseOn)
 			{
 				_toolRightFace.hide();

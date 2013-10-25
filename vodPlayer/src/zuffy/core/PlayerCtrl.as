@@ -506,15 +506,15 @@
 		
 		protected function playEventHandler(e:PlayEvent):void
 		{
-			//if(e.type != 'Progress'){
+			if(e.type != 'Progress'){
 				JTracer.sendMessage('PlayerCtrl -> playEventHandler, PlayEvent.' + e.type);
-			//}
+			}
 			_videoMask.isBuffer = _player.isBuffer;
 			_videoMask.bufferHandle(e.type, e.info);
 			_player.playEventHandler(e);
-			
-			switch(e.type)
-			{
+			CtrBarManager.instance.playEventHandler(e.type);
+
+			switch(e.type) {
 				case 'Replay':
 					hideNoticeBar();
 					break;
@@ -532,7 +532,6 @@
 					hideNoticeBar();
 
 					if (isChangeQuality == false) {
-						CtrBarManager.instance.onStop();
 						isFirstLoad = true;
 						_videoMask.bufferHandle('Stop');
 					}
@@ -540,10 +539,8 @@
 					_isBuffering = false;
 					_player.isBuffer = false;
 					//停止后，不处理为点击拖动条和使用按键进退产生的缓冲，使用bufferLength / bufferTime计算缓冲
-					CtrBarManager.instance.isClickBarSeek = false;
 					_isPressKeySeek = false;
 					//播放完后，显示工具条
-					CtrBarManager.instance.show(true);
 					_noticeBar.show(true);
 					//停止后，第一次提示重置为true
 					_isFirstTips = true;
@@ -560,10 +557,8 @@
 					JTracer.sendMessage("PlayerCtrl -> playEventHandler, isChangeQuality:" + isChangeQuality);
 					break;
 				case 'PlayForStage':
-					CtrBarManager.instance.dispatchPlay();
 					break;
 				case 'PauseForStage':
-					CtrBarManager.instance.dispatchPause();
 					break;
 				case 'PlayStart':
 					_isPlayStart = true;
@@ -644,12 +639,8 @@
 					{
 						_bufferTip.addBreakCount(_player.time);
 					}
-					//stage.frameRate = 20;
-					if( !isFirstLoad )
-						CtrBarManager.instance.normalPlayProgressBar();//遇到缓冲，进度条变大
 					break;
 				case 'BufferEnd':
-					CtrBarManager.instance.isClickBarSeek = false;
 					_isPressKeySeek = false;
 					_player.streamInPlay.resume();
 					if (_player.isPause)
@@ -663,7 +654,6 @@
 					_isStopNormal = false;
 					_isShowStopFace = false;
 					
-					CtrBarManager.instance.dispatchStop();
 					_videoMask.showErrorNotice();
 					break;
 			}
@@ -706,7 +696,7 @@
 		protected function keyDownFunc(event:KeyboardEvent):void {
 			var seekTime:Number;
 			var idx:int;
-			trace( event.keyCode );
+
 			switch( event.keyCode )
 			{
 				case 32:
@@ -749,13 +739,8 @@
 					
 					seekTime = _player.dragTime[idx];
 					
-					CtrBarManager.instance._barSlider.x = (CtrBarManager.instance._barWidth - 16) * seekTime / _player.totalTime;
-					if( CtrBarManager.instance._barSlider.x < 0 )
-						CtrBarManager.instance._barSlider.x = 0;
-					else if( CtrBarManager.instance._barSlider.x > CtrBarManager.instance._barWidth - 16 )
-						CtrBarManager.instance._barSlider.x = CtrBarManager.instance._barWidth - 16;
-					CtrBarManager.instance._barPlay.width = CtrBarManager.instance._barSlider.x - CtrBarManager.instance._barPlay.x + 6;
-					
+					CtrBarManager.instance.keySeekByTime(seekTime);
+
 					if( _seekDelayTimer )
 					{
 						_seekDelayTimer.reset();
@@ -817,12 +802,7 @@
 					
 					seekTime = _player.dragTime[idx];
 					
-					CtrBarManager.instance._barSlider.x = (CtrBarManager.instance._barWidth - 16) * seekTime / _player.totalTime;
-					if( CtrBarManager.instance._barSlider.x < 0 )
-						CtrBarManager.instance._barSlider.x = 0;
-					else if( CtrBarManager.instance._barSlider.x > CtrBarManager.instance._barWidth - 16 )
-						CtrBarManager.instance._barSlider.x = CtrBarManager.instance._barWidth - 16;
-					CtrBarManager.instance._barPlay.width = CtrBarManager.instance._barSlider.x - CtrBarManager.instance._barPlay.x + 6;
+					CtrBarManager.instance.keySeekByTime(seekTime);
 					
 					if( _seekDelayTimer2 )
 					{
@@ -1340,17 +1320,7 @@
 			GlobalVars.instance.hasSubtitle = Number(obj.subtitle) == 1 ? true : false;
 			
 			//没有内嵌字幕时，底部显示字幕按钮
-			if (CtrBarManager.instance)
-			{
-				if (!GlobalVars.instance.hasSubtitle)
-				{
-					CtrBarManager.instance.showCaptionBtn();
-				}
-				else
-				{
-					CtrBarManager.instance.hideCaptionBtn();
-				}
-			}
+			CtrBarManager.instance.toggleCaptionBtn(!GlobalVars.instance.hasSubtitle);
 		}
 		
 		public function flv_getTimePlayed():Object
@@ -1373,8 +1343,7 @@
 			
 			GlobalVars.instance.enableShare = obj.enableShare;
 			
-			if (CtrBarManager.instance)
-			{
+			if (CtrBarManager.instance) {
 				CtrBarManager.instance.enableFileList = obj.enableFileList || false;
 			}
 		}
