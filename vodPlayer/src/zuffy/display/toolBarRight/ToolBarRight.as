@@ -16,7 +16,6 @@
 	import com.common.Tools;
 	import zuffy.events.EventSet;
 	import com.global.GlobalVars;
-	import com.common.KKCountReport;
 	import zuffy.events.PlayEvent;
 	import flash.net.URLRequest;
 	import flash.external.ExternalInterface;

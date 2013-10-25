@@ -38,7 +38,6 @@
 	import zuffy.display.tip.VolumeTips;
 	import zuffy.display.volume.McVolume;
 	import zuffy.display.format.FormatBtn;
-	import com.common.KKCountReport;
 	import zuffy.events.*;
 	import zuffy.core.PlayerCtrl;
 	import com.Player;
@@ -117,6 +116,50 @@
 			faceLifting(_container.stage.stageWidth);
 		}
 
+		public function playEventHandler(type:String):void {
+			
+			switch(type) {
+				
+				case 'Stop':
+					if (_isChangeQuality == false) {
+						onStop();
+					}
+					
+					//停止后，不处理为点击拖动条和使用按键进退产生的缓冲，使用bufferLength / bufferTime计算缓冲
+					_isClickBarSeek = false;
+					
+					//播放完后，显示工具条
+					show(true);
+					
+					break;
+				case 'PlayForStage':
+					dispatchPlay();
+					break;
+				case 'PauseForStage':
+					dispatchPause();
+					break;
+				case 'BufferStart':
+					if( !playctrlHandler.isFirstLoad )
+						normalPlayProgressBar();//遇到缓冲，进度条变大
+					break;
+				case 'BufferEnd':
+					isClickBarSeek = false;
+					break;
+				case 'OpenWindow':
+					dispatchStop();
+					break;
+			}
+		}
+
+		public function keySeekByTime(seekTime:Number):void {
+			_barSlider.x = (_barWidth - 16) * seekTime / _player.totalTime;
+			if( _barSlider.x < 0 )
+				_barSlider.x = 0;
+			else if( _barSlider.x > _barWidth - 16 )
+				_barSlider.x = _barWidth - 16;
+			_barPlay.width = _barSlider.x - _barPlay.x + 6;
+		}
+
 		private function controlEventHandler(e:ControlEvent):void
 		{
 			if (e.info == 'hidden') {
@@ -124,6 +167,15 @@
 				_seekEnable = false;
 			}else {
 				_seekEnable = true;
+			}
+		}
+
+		public function toggleCaptionBtn(isShow:Boolean):void {
+			if (isShow) {
+				showCaptionBtn();
+			}
+			else {
+				hideCaptionBtn();
 			}
 		}
 
@@ -652,7 +704,6 @@
 				playctrlHandler.stage.displayState = StageDisplayState.NORMAL;
 			}else{
 				playctrlHandler.stage.displayState = StageDisplayState.FULL_SCREEN;
-				KKCountReport.sendKankanPgv('btnclick_full');
 			}
 		}
 		
@@ -1443,19 +1494,6 @@
 				return;
 			}
 			
-			if (e) {
-				switch(e.target) {
-					case _btnPlay:
-						KKCountReport.sendKankanPgv('btnclick_play');
-						break;
-					case _btnPlayBig:
-						KKCountReport.sendKankanPgv('btnclick_play_b');
-						break;
-					case _btnPauseBig:
-						KKCountReport.sendKankanPgv('btnclick_play_b');
-						break;
-				}
-			}
 			setPlayStatus();
 			if (_player.isStop) {
 				ExternalInterface.call("flv_playerEvent", "onRePlay");//播放完后再播放
@@ -1474,18 +1512,6 @@
 		}
 		
 		public function dispatchPause(e:Event = null) {
-			if (e) {
-				switch (e.target) {
-					case _btnPause:
-						KKCountReport.sendKankanPgv('btnclick_cancel');
-						break;
-				}
-			}
-			//在0位置的时候也可以暂停
-			/*if (_player.time <= 0 || _player.fixedTime == 0)
-			{
-				return;
-			}*/
 			_container.dispatchEvent(new PlayEvent(PlayEvent.PAUSE));
 			_btnPauseBig.visible = true;
 			_btnPlay.visible=true;
@@ -1841,11 +1867,7 @@
 
 		private function volumeBtnEventHandler(e:MouseEvent):void
 		{
-			if (e.type == 'click') {
-				KKCountReport.sendKankanPgv('btnclick_silent');
-			}
-			switch(e.type)
-			{
+			switch(e.type) {
 				case 'mouseOver':
 					setVolumeBtn(2);
 					//_mcVolume.visible = true;

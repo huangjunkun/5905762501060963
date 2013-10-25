@@ -45,11 +45,15 @@
 	import zuffy.utils.JTracer;
 	import zuffy.ctr.manager.SubtitleManager;
 	import zuffy.ctr.manager.CtrBarManager;
+	import zuffy.net.VodRequestManager;
 	
 	// 字幕接口
 	import zuffy.interfaces.ICaption;
 
-	public class PlayerCtrl extends Sprite implements ICaption {
+	// 请求代理接口
+	import zuffy.interfaces.IVodRequester;
+
+	public class PlayerCtrl extends Sprite implements ICaption, IVodRequester {
 		
 		protected var _setSizeInfo:Object = { 'ratio':'common', 'size':'100', 'ratioValue':0, 'sizeValue':1 };
 		
@@ -107,6 +111,8 @@
 		private var _formatsObj:Object;
 		private var _isShowAutoloadTips:Boolean;
 
+		private var _curPlayUrl:String;		// 当前页面播放视频的 原始地址.
+
 		private var _params:Object;
 
 		public function PlayerCtrl()
@@ -135,6 +141,9 @@
 
 			initGlobalData(_params);
 			initializePlayCtrl(_params);
+
+			VodRequestManager.instance.setup(this);
+
 		}
 
 		protected function initGlobalData(tParams:Object):void{
@@ -353,7 +362,7 @@
 
 			CheckUserManager.instance.checkUserCompleteHandler = function checkUserCompleteHandler(resultStr:String):void {
 				// 4-sessionid已失效, 5-sessionid与userid不对应
-				var resultObj:Object = com.serialization.json.JSON.deserialize(resultStr);
+				var resultObj:Object = JSON.deserialize(resultStr);
 				var result:Number = resultObj.result;
 				JTracer.sendMessage("PlayerCtrl -> onCheckUserComplete, check is valid complete, result:" + result);
 			
@@ -506,15 +515,15 @@
 		
 		protected function playEventHandler(e:PlayEvent):void
 		{
-			//if(e.type != 'Progress'){
+			if(e.type != 'Progress'){
 				JTracer.sendMessage('PlayerCtrl -> playEventHandler, PlayEvent.' + e.type);
-			//}
+			}
 			_videoMask.isBuffer = _player.isBuffer;
 			_videoMask.bufferHandle(e.type, e.info);
 			_player.playEventHandler(e);
-			
-			switch(e.type)
-			{
+			CtrBarManager.instance.playEventHandler(e.type);
+
+			switch(e.type) {
 				case 'Replay':
 					hideNoticeBar();
 					break;
@@ -532,7 +541,6 @@
 					hideNoticeBar();
 
 					if (isChangeQuality == false) {
-						CtrBarManager.instance.onStop();
 						isFirstLoad = true;
 						_videoMask.bufferHandle('Stop');
 					}
@@ -540,10 +548,8 @@
 					_isBuffering = false;
 					_player.isBuffer = false;
 					//停止后，不处理为点击拖动条和使用按键进退产生的缓冲，使用bufferLength / bufferTime计算缓冲
-					CtrBarManager.instance.isClickBarSeek = false;
 					_isPressKeySeek = false;
 					//播放完后，显示工具条
-					CtrBarManager.instance.show(true);
 					_noticeBar.show(true);
 					//停止后，第一次提示重置为true
 					_isFirstTips = true;
@@ -560,10 +566,8 @@
 					JTracer.sendMessage("PlayerCtrl -> playEventHandler, isChangeQuality:" + isChangeQuality);
 					break;
 				case 'PlayForStage':
-					CtrBarManager.instance.dispatchPlay();
 					break;
 				case 'PauseForStage':
-					CtrBarManager.instance.dispatchPause();
 					break;
 				case 'PlayStart':
 					_isPlayStart = true;
@@ -644,12 +648,8 @@
 					{
 						_bufferTip.addBreakCount(_player.time);
 					}
-					//stage.frameRate = 20;
-					if( !isFirstLoad )
-						CtrBarManager.instance.normalPlayProgressBar();//遇到缓冲，进度条变大
 					break;
 				case 'BufferEnd':
-					CtrBarManager.instance.isClickBarSeek = false;
 					_isPressKeySeek = false;
 					_player.streamInPlay.resume();
 					if (_player.isPause)
@@ -663,7 +663,6 @@
 					_isStopNormal = false;
 					_isShowStopFace = false;
 					
-					CtrBarManager.instance.dispatchStop();
 					_videoMask.showErrorNotice();
 					break;
 			}
@@ -706,7 +705,7 @@
 		protected function keyDownFunc(event:KeyboardEvent):void {
 			var seekTime:Number;
 			var idx:int;
-			trace( event.keyCode );
+
 			switch( event.keyCode )
 			{
 				case 32:
@@ -749,13 +748,8 @@
 					
 					seekTime = _player.dragTime[idx];
 					
-					CtrBarManager.instance._barSlider.x = (CtrBarManager.instance._barWidth - 16) * seekTime / _player.totalTime;
-					if( CtrBarManager.instance._barSlider.x < 0 )
-						CtrBarManager.instance._barSlider.x = 0;
-					else if( CtrBarManager.instance._barSlider.x > CtrBarManager.instance._barWidth - 16 )
-						CtrBarManager.instance._barSlider.x = CtrBarManager.instance._barWidth - 16;
-					CtrBarManager.instance._barPlay.width = CtrBarManager.instance._barSlider.x - CtrBarManager.instance._barPlay.x + 6;
-					
+					CtrBarManager.instance.keySeekByTime(seekTime);
+
 					if( _seekDelayTimer )
 					{
 						_seekDelayTimer.reset();
@@ -817,13 +811,8 @@
 					
 					seekTime = _player.dragTime[idx];
 					
-					CtrBarManager.instance._barSlider.x = (CtrBarManager.instance._barWidth - 16) * seekTime / _player.totalTime;
-					if( CtrBarManager.instance._barSlider.x < 0 )
-						CtrBarManager.instance._barSlider.x = 0;
-					else if( CtrBarManager.instance._barSlider.x > CtrBarManager.instance._barWidth - 16 )
-						CtrBarManager.instance._barSlider.x = CtrBarManager.instance._barWidth - 16;
-					CtrBarManager.instance._barPlay.width = CtrBarManager.instance._barSlider.x - CtrBarManager.instance._barPlay.x + 6;
-					
+					CtrBarManager.instance.keySeekByTime(seekTime);
+
 					if( _seekDelayTimer2 )
 					{
 						_seekDelayTimer2.reset();
@@ -1255,27 +1244,8 @@
 
 		public function flv_ready():Boolean{return true;}
 		
-		public function flv_playOtherFail(boo:Boolean, tips:String = ""):void
-		{
-			var urlStr:String = "PlayerCtrl -> js回调flv_playOtherFail, 切换新视频, 是否切换成功:" + boo + ", tips:" + tips;
-			JTracer.sendMessage(urlStr);
-			
-			GlobalVars.instance.isExchangeError = !boo;
-			
-			//取消字幕
-			SubtitleManager.instance.cancelSubTitle();
-			
-			if (!boo)
-			{
-				_isStopNormal = false;
-				_isShowStopFace = false;
-				
-				CtrBarManager.instance.dispatchStop();
-				_videoMask.showErrorNotice(VideoMask.exchangeError, null, tips);
-				
-				var formatObj:Object = { "y": { "checked":false, "enable":false }, "c": { "checked":false, "enable":false }, "p": { "checked":false, "enable":false }, "g": { "checked":false, "enable":false }};
-				CtrBarManager.instance.showFormatLayer(formatObj);
-			}
+		public function flv_playOtherFail(boo:Boolean, tips:String = ""):void {
+			playOtherFail(boo, tips);
 		}
 		
 		/**
@@ -1340,17 +1310,7 @@
 			GlobalVars.instance.hasSubtitle = Number(obj.subtitle) == 1 ? true : false;
 			
 			//没有内嵌字幕时，底部显示字幕按钮
-			if (CtrBarManager.instance)
-			{
-				if (!GlobalVars.instance.hasSubtitle)
-				{
-					CtrBarManager.instance.showCaptionBtn();
-				}
-				else
-				{
-					CtrBarManager.instance.hideCaptionBtn();
-				}
-			}
+			CtrBarManager.instance.toggleCaptionBtn(!GlobalVars.instance.hasSubtitle);
 		}
 		
 		public function flv_getTimePlayed():Object
@@ -1373,8 +1333,7 @@
 			
 			GlobalVars.instance.enableShare = obj.enableShare;
 			
-			if (CtrBarManager.instance)
-			{
+			if (CtrBarManager.instance) {
 				CtrBarManager.instance.enableFileList = obj.enableFileList || false;
 			}
 		}
@@ -1603,6 +1562,214 @@
 			return false;
 		}
 		
+
+		/*==============================================
+			implements IVodRequester method.
+		==============================================*/
+		public function playOtherFail(boo:Boolean, tips:String = ""):void {
+			var urlStr:String = "PlayerCtrl -> js回调flv_playOtherFail, 切换新视频, 是否切换成功:" + boo + ", tips:" + tips;
+			JTracer.sendMessage(urlStr);
+			
+			GlobalVars.instance.isExchangeError = !boo;
+			
+			//取消字幕
+			SubtitleManager.instance.cancelSubTitle();
+			
+			if (!boo)
+			{
+				_isStopNormal = false;
+				_isShowStopFace = false;
+				
+				CtrBarManager.instance.dispatchStop();
+				_videoMask.showErrorNotice(VideoMask.exchangeError, null, tips);
+				
+				var formatObj:Object = { "y": { "checked":false, "enable":false }, "c": { "checked":false, "enable":false }, "p": { "checked":false, "enable":false }, "g": { "checked":false, "enable":false }};
+				CtrBarManager.instance.showFormatLayer(formatObj);
+			}
+		}
+
+		private var _curPlay:Object;
+		public function queryBack(req:Object):void {
+				_curPlay = req;
+				// 不能播放时调用flash接口
+				var tellFlashFail = function(){
+				/*_INSTANCE.attachEvent(_INSTANCE,'onload',function(_o,_e){
+				that.playerInstance = _INSTANCE.playerInstance;
+				if(DEBUG)
+				that.playerInstance.showDebug();
+				that.initEvent();
+				that.playerInstance.playOtherFail(false,_genErrorMsg(req,1));
+				var param = {
+				"description":"请选择字幕文件(*.srt、*.ass)",
+				"extension":"*.srt;*.ass",
+				"limitSize":6*1024*1024,
+				"uploadURL":DYSERVER+"interface/upload_file/?cid="+cid,
+				"timeOut":"30"
+				};
+				that.playerInstance.setCaptionParam(param);
+
+				that.playerInstance.setToolBarEnable({enableShare:false,enableFileList:playerFunSettings.enableFileList,enableDownload:false,enableSet:false,enableCaption:false,enableOpenWindow:playerFunSettings.enableOpenWindow,enableTopBar:playerFunSettings.enableTopBar,enableFeedback:true});
+				that.setFeeParam(0);
+				that.setShareParam();
+				});
+				var id = box_obj.getAttribute('id');
+				_INSTANCE.printObject(id,false,'100%','100%','',flashvars);
+				try{window[success].call();}catch(e){}*/
+				};
+
+				//不能播放的逻辑
+				if( typeof req.status == 'undefined' || req.status != 0 ) {
+					try {
+						// 资源不能秒播则上报
+						if(req.ret == 0){
+
+							var errGcid = Tools.getUserInfo('gcid') || "";
+
+							var errUrl = !errGcid ? _curPlayUrl : "";
+
+							Tools.stat([
+							'f=playAtOnceFail', 
+							'&gid=' + errGcid, 
+							'&url=' + errUrl, 
+							'&isTryPlay=false', 
+							'&status='+ req.status, 
+							'&transWait=' + req.trans_wait 
+							].join(''));
+
+						}
+
+					}catch(e){}
+
+					if(req.ret == 11){
+
+						_showErrorTip(_genErrorMsg(req));
+						// sessionid过期，跳去中间页登录
+						if(Tools.getUserInfo('vodPermit') == 4){
+							var goUrl = "http://vod.xunlei.com/play.html" + location.search + "#action=sidExpired";
+							Tools.windowOpen(goUrl, "_self");
+						}
+
+					}
+					// 普通url在页面中提示
+					// 非多视频BT文件
+					else if( _fileType == 'url' || that.fileList == null || that.fileList.subfile_list.length <=1 ){	
+						_showErrorTip(_genErrorMsg(req));
+					}
+					// 含多视频BT文件的在bt中提示
+					else{
+						tellFlashFail();
+					}
+				}
+        else{
+					if(_fileType == 'url'){
+						fileList = {
+							"userid":Tools.getUserInfo('userid'),
+							"info_hash":"",
+							"subfile_list":[{
+									"name":_curPlay.src_info.file_name,
+									"index":-1,
+									"url_hash":_curPlay.url_hash
+								}]
+						};
+					}
+            
+            if(that.originalPlay==null)
+                that.originalPlay = req;
+            that.cacheData = that.cacheReqData(that.cacheData,req,that._curPlay.url_hash);
+        var info = req.vodinfo_list
+        ,	urlFormat = $PU("format")
+        ,	format_types = {
+	        'p' : 0,
+        	'g' : 1,
+        	'c' : 2
+        }
+      	!( urlFormat == 'c' || urlFormat == 'g' || urlFormat == 'p' ) && ( urlFormat = void(0) );
+            that.vod_info = info;
+        that.hasSubtitle = info[0].has_subtitle || 0;
+
+            _INSTANCE.attachEvent(_INSTANCE,'onload',function(_o,_e){
+                playerLoadTime.flashLoadEnd = new Date().getTime();
+                that.playerInstance = _INSTANCE.playerInstance;
+                if(DEBUG)
+                    that.playerInstance.showDebug();
+
+                if(!initFormat)
+	            try{
+		            initFormat = that.playerInstance.getDefaultFormat() || 'p';
+	            }catch(e){initFormat = 'p'}
+            initFormat = initFormat.match(/^(g|p|c)$/) ? initFormat : 'p';
+
+                that.initEvent();
+                var formatNum = info.length;
+                if( (formatNum==1 && (initFormat=='g' || initFormat=='c') )  )
+                    initFormat = 'p';
+                else if ( (formatNum==2 && initFormat=='c') )
+                    initFormat = 'g';
+
+                var initUrl = "";
+                var initUrls = [];
+                var curInfo = {};
+                (parseInt( format_types[urlFormat] ) <= formatNum) && ( initFormat = urlFormat || initFormat );
+			curInfo = info[0];
+                initUrl = info[0].vod_url;
+                initUrls = info[0].vod_urls;
+                try{
+                    if(initFormat == 'g' ){
+                        curInfo = info[1];
+						initUrl = info[1].vod_url;
+                        initUrls = info[1].vod_urls;
+                    }
+					else if(initFormat == 'c'){
+                        curInfo = info[2];
+						initUrl = info[2].vod_url
+                        initUrls = info[2].vod_urls;
+                    }
+                }
+                catch(e){}
+
+                //试播登录时如果记录时间点.
+                if( tryPlayLastPos >= 0 ){
+                    that.lastPos = tryPlayLastPos;
+                    tryPlayLastPos = -1;
+                }
+
+                // 在给flash filename之前判断一下，如果filename为空则用点播请求的
+                if(!that.curName)
+                    that.curName = decode(that._curPlay.src_info.file_name);
+                playerLoadTime.startFlash = new Date().getTime();
+                that.startPlay(initUrl, initFormat, that.lastPos, 0, initUrls, curInfo);
+                that.getFormats();	/* js主动调用flash改变清晰度按钮的接口，opera下flash触发onGetFormats 有问题 */
+                that.playerInstance.playOtherFail(true);
+                that.getCaption(that._curPlay.src_info.gcid,that._curPlay.src_info.cid);
+                that.setShareParam();
+                that.curName = decode(that._curPlay.src_info.file_name);
+            });
+            var id = box_obj.getAttribute('id');
+            playerLoadTime.flashLoadStart = new Date().getTime();
+            _INSTANCE.printObject(id,false,'100%','100%','',flashvars);
+            try{window[success].call();}catch(e){}
+        }
+        //上报
+        if(that._curPlay.src_info)
+            var g = that._curPlay.src_info.gcid
+        else
+            var g = '';
+        setTimeout(function(){
+            // 延后上报（延迟到onload之后），暂时解决stat上报慢影响chrome浏览器flash加载的问题
+            try{that.stat({f:'svrresp',ret:that._curPlay.ret,pt:that._curPlay.status,gcid:g}); }catch(e){}
+        }, 3000);
+
+			}
+
+		// 显示错误提示  
+		private function _showErrorTip(msg:String):void {
+		//
+		}
+
+		// 过滤错误信息
+		private function _genErrorMsg(req, inPlayer:Boolean = false):void {
+			
+		}
 
 		/*==============================================
 			implements icaption method.

@@ -169,27 +169,9 @@
 			hideAll();
 			drawMask();
 			Tools.windowOpen(GlobalVars.instance.url_chome, "_self");
-			/*
-			hideAll();
-			drawMask();
-			if(_inputFace == null){
-				_inputFace = new InputFace();
-			}else {
-				_inputFace.visible = true;
-			}
-			this.addChild(_inputFace);
-			setPosition();
-			*/
 		}
 		
-		public function initInputFace():void
-		{
-			/*
-			if (_inputFace)
-			{
-				_inputFace.init();
-			}
-			*/
+		public function initInputFace():void {
 		}
 		
 		public function showInitPauseLogo():void
@@ -415,12 +397,6 @@
 			
 			this.addEventListener(Event.ENTER_FRAME, fnEnterFrameBytesLoaded);
 			setPosition();
-			/*
-			if(!_isBuffer){
-				ExternalInterface.call("flv_playerEvent", "onbuffering");
-				JTracer.sendMessage("VideoMask -> onbuffering");
-			}
-			*/
 		}
 		
 		public function showLoadingQuality():void //changeQuality

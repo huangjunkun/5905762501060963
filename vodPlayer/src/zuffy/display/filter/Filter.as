@@ -15,7 +15,6 @@
 	import com.global.GlobalVars;
 	import zuffy.events.EventFilter;
 	import com.Player;
-	import com.common.KKCountReport;
 	import com.common.JTracer;
 	import zuffy.events.EventSet;
 	import zuffy.events.EventFilter;
