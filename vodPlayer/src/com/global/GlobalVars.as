@@ -192,7 +192,7 @@
 		
 		//来自网盘
 		public var fromXLPan:String = "xlpan";
-		
+		public var ISERVER:String = "http://i.vod.xunlei.com/";
 		public var url_buy_flow:String = "http://pay.vip.xunlei.com/vod.html?refresh=2";			//时长不足，开通会员入口
 		public var url_buy_time:String = "http://pay.vip.xunlei.com/vodcard";						//时长卡
 		public var url_free_flow:String = "http://act.vip.xunlei.com/vodfree/";						//免费获得流量
@@ -254,6 +254,8 @@
 		
 		// 扣费用户
 		public var feeUser:Boolean = false;
+
+		public var isTryPayer:Boolean = false;
 		
 
 	}
