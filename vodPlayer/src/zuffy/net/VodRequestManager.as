@@ -10,6 +10,11 @@
 	import flash.utils.clearTimeout;
 	import com.serialization.json.JSON;
 	import zuffy.interfaces.IVodRequester;
+	import com.common.JTracer;
+	import flash.net.URLRequestMethod;
+	import flash.external.ExternalInterface;
+	import flash.events.ProgressEvent;
+	import flash.net.Socket;
 	
 	public class VodRequestManager {
 		
@@ -23,6 +28,7 @@
 		private var timeoutTime:int = 15000;
 		private var _isOther:Boolean;
 		private var vodPermit:int;
+		
 		private var _delegate:IVodRequester;
 
 		public static function get instance(): VodRequestManager {
@@ -34,13 +40,14 @@
 			return _instance;
 		}
 		public function VodRequestManager(__:__inner__) {
+		
 		}
 
 		public function setup(vodRequester:IVodRequester):void {
 			_delegate = vodRequester;
 		}
 
-		public function query(url:String, filename:String, gcid:String, cid:String, filesize:String, isOther:Boolean):void {
+		public function query(url:String, filename:String, gcid:String, cid:String, filesize:String, isOther:Boolean = false):void {
 			var queryStr:String;
 
 			queryStr = [
@@ -68,13 +75,15 @@
 
 			_isOther = isOther;
 			_requester = new URLRequest(GlobalVars.instance.ISERVER + GET_METHOD_STRING + queryStr);
-			_urlLoader = new URLLoader(_requester);
+			_requester.method = URLRequestMethod.GET;
+			_urlLoader = new URLLoader();
 			_urlLoader.addEventListener(Event.COMPLETE, onCheckUserComplete);
 			_urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onCheckUserIOError);
 			_urlLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onCheckUserSecurityError);
+			_urlLoader.load(_requester);
 
-				//超时处理
-			timerFlag=true;
+			//超时处理
+			timerFlag = true;
 			_timeoutID = setTimeout(function(){
 				if(_isOther)
 					_delegate.playOtherFail(false);
@@ -88,30 +97,28 @@
 
 		function onCheckUserComplete(evt:Event):void {
 			var resultStr:String = evt.target.data;
+			JTracer.sendMessage('onCheckUserComplete:'+resultStr);
 			var r:Object = JSON.deserialize(resultStr);
 			if(r.resp.vod_permit && typeof (r.resp.vod_permit.ret) != 'undefined')
 				vodPermit = r.resp.vod_permit.ret;
 			else
 				vodPermit = -1;
-				
+			
 			clearTimeout(_timeoutID);
 			timerFlag = false;
 
-			var timer2 = setTimeout(function(){
-				if(_isOther)
-					queryOtherBack(r.resp);
-				else
-					_delegate.queryBack(r.resp);
-					clearTimeout(timer2);
-			},25);
+			if(_isOther)
+				queryOtherBack(r.resp);
+			else
+				_delegate.queryBack(r.resp);
 		}
 		
 		function onCheckUserIOError(e:IOErrorEvent):void {
-			
+			JTracer.sendMessage('IOErrorEvent:' + e)
 		}
 		
 		function onCheckUserSecurityError(e:SecurityErrorEvent):void {
-			
+			JTracer.sendMessage('SecurityErrorEvent:' + e)
 		}
 
 		function queryOtherBack(req:Object):void {

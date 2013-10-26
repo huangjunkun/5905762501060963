@@ -52,6 +52,7 @@
 
 	// 请求代理接口
 	import zuffy.interfaces.IVodRequester;
+	import zuffy.ctr.module.VODReqBackDataModule;
 
 	public class PlayerCtrl extends Sprite implements ICaption, IVodRequester {
 		
@@ -141,9 +142,28 @@
 
 			initGlobalData(_params);
 			initializePlayCtrl(_params);
-
+			var infos:Object = {
+				'sessionid': '3E48EB981408678B35469D19D3CA22A8467944A15ACDA6C2BD2C801221EEDC2520EDCFF0506D1503101927C69A817497B1BA1AF13CA6D6CC333F528E116611B1',
+				'userid': '217800687',
+				'userType': '0',
+				'vodPermit': '0',
+				'isvip': '1',
+				'gcid': '5B3021B9EFF927534B28DB8E71C2F1BED6AFB76E',
+				'cid': 'C6C8EF20EF5CB039ECE58DF7229F5AF57C12A407',
+				'name': '[阳光电影www.ygdy8.com].怪兽大学.HD.1024x548.中文字幕.rmvb',
+				'url_hash': '4580522841734408672',
+				'from': 'vlist',
+				'url': 'thunder://QUFmdHA6Ly9keWdvZDE6ZHlnb2QxQGQwNzAuZHlnb2Qub3JnOjEwOTEvWyVFOSU5OCVCMyVFNSU4NSU4OSVFNyU5NCVCNSVFNSVCRCVCMXd3dy55Z2R5OC5jb21dLiVFNiU4MCVBQSVFNSU4NSVCRCVFNSVBNCVBNyVFNSVBRCVBNi5IRC4xMDI0eDU0OC4lRTQlQjglQUQlRTYlOTYlODclRTUlQUQlOTclRTUlQjklOTUucm12Ylpa',
+				'index': 'QUFmdHA6Ly9keWdvZDE6ZHlnb2QxQGQwNzAuZHlnb2Qub3JnOjEwOTEvWyVFOSU5OCVCMyVFNSU4NSU4OSVFNyU5NCVCNSVFNSVCRCVCMXd3dy55Z2R5OC5jb21dLiVFNiU4MCVBQSVFNSU4NSVCRCVFNSVBNCVBNyVFNSVBRCVBNi5IRC4xMDI0eDU0OC4lRTQlQjglQUQlRTYlOTYlODclRTUlQUQlOTclRTUlQjklOTUucm12Ylpaa',
+				'ygcid': '46DF0A5789E7A70AEEC5B635FD2F01722D2E415A',
+				'ycid': 'C6C8EF20EF5CB039ECE58DF7229F5AF57C12A407',
+				'filesize': '898963093',
+				'info_hash': '',
+				'subtitle': 1
+			}
+			flv_setFeeParam(infos)
 			VodRequestManager.instance.setup(this);
-
+			VodRequestManager.instance.query(Tools.getUserInfo('url'), Tools.getUserInfo('name'), Tools.getUserInfo('gcid'), Tools.getUserInfo('cid'), Tools.getUserInfo('filesize'));
 		}
 
 		protected function initGlobalData(tParams:Object):void{
@@ -1062,8 +1082,9 @@
 			_player.clearUp();
 		}
 		
+		public function flv_setPlayeUrl(arr:Array):void{}
 		
-		public function flv_setPlayeUrl(arr:Array):void
+		public function setPlayeUrl(arr:Array):void
 		{
 			var urlStr:String = "PlayerCtrl -> js回调flv_setPlayeUrl, 设置播放地址:";
 			for (var i:* in arr[0])
@@ -1590,15 +1611,11 @@
 
 		private var _curPlay:Object;
 		private var _fileType:String;
-		private var _fileList:Object;
-		private var _vod_info:Array;
-		private var _cacheData:Array;	// 缓存请求列表
 		private var _curName:String;
-		private var _lastFormat:String;
 		private var _lastPos:Number;
-		
+		private var _reqData:VODReqBackDataModule;
 		public function queryBack(req:Object):void {
-			_curPlay = req;
+			_reqData = new VODReqBackDataModule(req);
 			// 不能播放时调用flash接口
 			var tellFlashFail = function(){
 			/*_INSTANCE.attachEvent(_INSTANCE,'onload',function(_o,_e){
@@ -1659,146 +1676,82 @@
 					}
 
 				}
-				// 普通url在页面中提示
-				// 非多视频BT文件
-				else if( _fileType == 'url' || !_fileList || _fileList.subfile_list.length <= 1 ){	
-					_showErrorTip(_genErrorMsg(req));
-				}
 				// 含多视频BT文件的在bt中提示
 				else{
 					tellFlashFail();
 				}
 			}
-      else{
-				if(_fileType == 'url'){
-					_fileList = {
-						"userid":Tools.getUserInfo('userid'),
-						"info_hash":"",
-						"subfile_list":[{
-								"name":_curPlay.src_info.file_name,
-								"index":-1,
-								"url_hash":_curPlay.url_hash
-							}]
-					};
-				}
-
-				_cacheData = _cacheReqData(_cacheData, req, _curPlay.url_hash);
-
-				var info:Array = req.vodinfo_list;
-				var urlFormat:String = 'p' //$PU("format");
-				var format_types:Object = {
-							'p' : 0,
-							'g' : 1,
-							'c' : 2
-						}
-				// 默认值
-				if(urlFormat != 'c' && urlFormat != 'g' && urlFormat != 'p') {
-					urlFormat = 'p';
-				}
+			else{
 				
-				_vod_info = info;
-
-				GlobalVars.instance.hasSubtitle = info[0].has_subtitle || 0;
-				
-				var initFormat:String;
-
-				function readyToPlay():void {
-					if(!initFormat){
-						try{
-							initFormat = ExternalInterface.call("G_PLAYER_INSTANCE.getStorageData", "defaultFormat") || 'p';
-						}catch(e){
-							initFormat = 'p';
-						}
-					}
-
-					initFormat = initFormat.match(/^(g|p|c)$/) ? initFormat : 'p';
-					var formatNum:int = info.length;
-
-					if((formatNum == 1 && (initFormat == 'g' || initFormat == 'c')))
-						initFormat = 'p';
-					else if ((formatNum == 2 && initFormat == 'c'))
-						initFormat = 'g';
-
-					var initUrl:String = "";
-					var initUrls:Array = [];
-					var curInfo:Object = {};
-					if(parseInt(format_types[urlFormat]) <= formatNum){
-						initFormat = urlFormat || initFormat;
-					}
-
-					curInfo = info[0];
-					initUrl = info[0].vod_url;
-					initUrls = info[0].vod_urls;
-
-					try {
-						if(initFormat == 'g' ){
-							curInfo = info[1];
-							initUrl = info[1].vod_url;
-							initUrls = info[1].vod_urls;
-						}
-						else if(initFormat == 'c'){
-							curInfo = info[2];
-							initUrl = info[2].vod_url
-							initUrls = info[2].vod_urls;
-						}
-					}catch(e){}
-
-					// 在给flash filename之前判断一下，如果filename为空则用点播请求的
-					_curName = _curPlay.src_info.file_name;
-
-					// 设置控制栏清晰度状态
-					_getFormats();
+				_getFormats(_reqData.curFormat);
 					
-					flv_playOtherFail(true);
-
-					//startPlay(initUrl, initFormat, _lastPos, 0, initUrls, curInfo);
-				}
-
-				readyToPlay();
+				flv_playOtherFail(true);
+				_player.clearUp();
+				_startPlay(true,false,true,0,false);
 
 			}
 
 		}
-		private function _startPlay():void {
+
+		private function _startPlay(isServer:Boolean, urlObj:Boolean, autoplay:Boolean, ischange:Boolean, isRetryUrlAtLimit:Boolean):void {
 			
+			var url:String = _reqData.curUrl;
+			var paramobj = [{url:"",start:0,autoplay:1,quality:0,qualitystr:"000",qualitytype:0,subStart:0,subEnd:0,title:"",vcut:0,submovieid:0,skipMovieHeadTime:0,skipMovieEndTime:0,streamtype:0,posterUrl:"",totalByte:0,totalTime:0,sliceTime:0}];
+			
+			paramobj[0].url = url;
+			paramobj[0].urls = _reqData.curUrls;
+			paramobj[0].vod_url_dt17 = 0//param.vod_url_dt17;
+			paramobj[0].autoplay = autoplay;
+			paramobj[0].quality = 0;
+			paramobj[0].qualitystr = '000';
+			
+			paramobj[0].totalByte = _reqData.totalByte;//150523213;//this.totalByte;
+			paramobj[0].totalTime = int(_reqData.totalTimeInMs/1000000);//5530;//1646;//this.totalTime;
+			paramobj[0].sliceTime = 720;    // 切片时间
+			paramobj[0].sliceType = 0;//0字节拼接 转码完成  1时间拼接 转码中
+			paramobj[0].start = 0;
+			paramobj[0].format = _reqData.curFormat;//g 高清 p普请
+			
+			if(urlObj){
+				paramobj[0].jsonObj = urlObj;
+				if(autoplay){
+					paramobj[0].autoplay = autoplay;
+				}else{
+					paramobj[0].autoplay = 2;
+				}
+			}
+
+			if(isServer){
+				paramobj[0].streamtype = 1;
+				paramobj[0].packageUrl = '___';
+			}else{
+				paramobj[0].streamtype = 0;
+			}
+			paramobj[0].isRetryLastTime = false;
+			paramobj[0].skipMovieHeadTime = 0;
+			paramobj[0].skipMovieEndTime = 0;
+			
+
+			if(paramobj.totalTime<5)
+				setBufferTime(paramobj.totalTime);
+
+			setPlayeUrl(paramobj);
 		}
+		
 		private function _getFormats(tformat:String = null):void {
-			
-			var format = tformat || this._lastFormat;
-			var norms={
-				c:{checked:false,enable:false},
-				g:{checked:false,enable:false},
-				p:{checked:false,enable:false},
-				y:{checked:false,enable:false}
+			var format:String = tformat || 'p';
+			var norms:Object = {
+				c:{checked: false, enable: false},
+				g:{checked: false, enable: false},
+				p:{checked: false, enable: false},
+				y:{checked: false, enable: false}
 			};
-			norms.g.enable = typeof(this._vod_info[1]) != 'undefined';
-			norms.c.enable = typeof(this._vod_info[2]) != 'undefined';
+
+			norms.g.enable = typeof(_reqData.info_list[1]) != 'undefined';
+			norms.c.enable = typeof(_reqData.info_list[2]) != 'undefined';
 			norms.p.enable = true;
 			norms[format].checked = true;
 			flv_showFormats(norms);
-		}
-
-		private function _cacheReqData(tcacheData:Array, itemData:Object, uniqueValue:String):Array {
-			
-			var cacheData:Array = tcacheData || [];
-			var cacheDataLength = cacheData.length;
-
-			if(cacheDataLength > 0 && cacheDataLength < 6) {
-				var tmpData = [];
-				for(var i = 0; i < cacheDataLength; i++) {
-					if(cacheData[i].url_hash && cacheData[i].url_hash != uniqueValue){
-						tmpData.push(cacheData[i]);
-					}
-				}
-				cacheData = tmpData;
-			}
-
-			cacheData.push(itemData);
-			
-			if(cacheData.length == 5)
-				cacheData.shift();
-			
-			return cacheData;
 		}
 
 		// 显示错误提示  
@@ -1880,8 +1833,5 @@
 			}
 			clearTimeout(_playerTxtTipsID);
 		}
-
-
-
 	}
 }
